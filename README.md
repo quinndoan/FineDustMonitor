@@ -6,6 +6,9 @@ Thiết bị hiển thị mức bụi min PM2.5 và PM10 theo 3 cách:
 2. Gửi qua serial (cổng usb) về máy tính gới giá trị dạng text
 3. Gửi về máy chủ MQTT tại <mqtt.toolhub.app>
 
+
+![hộp thiết bị](./fullbox.jpg)
+
 Mặt khác, một đèn led chỉ thị _(led built-in D4 trên board Wemos D1 R2 mini)_ sáng mỗi khi bấm __nút chuyển trạng thái__ hiển thị.
 
 1. số liệu
