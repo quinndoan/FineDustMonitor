@@ -15,7 +15,16 @@ U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 float pm25_val = 0.0;
 float pm10_val = 0.0;
 const int SDS_PACKET_SIZE = 10;
+/** Nội dung 1 gói tin SDS */
 byte sds_buffer[SDS_PACKET_SIZE]; 
+
+// Phục vụ cho đồ thị cột
+const int MAX_SAMPLES = 16; 
+const int MAX_AQI_VALUE = 64; 
+// Mảng lưu trữ 16 giá trị PM2.5 gần nhất. [0] là dữ liệu mới nhất
+int aqi25_history[MAX_SAMPLES] = {0}; 
+int aqi10_history[MAX_SAMPLES] = {0}; 
+int sample_index = 0;
 
 // --- NÚT BẤM -----
 #define CFG_BUTTON D7
@@ -52,7 +61,7 @@ void parseSdsData() {
     // Gửi thông tin debug ra Serial MẶC ĐỊNH (cổng USB)
     Serial.print("PM2.5, "); Serial.println(pm25_val, 1);
     Serial.print("PM10, "); Serial.println(pm10_val, 1);
-    
+
   } else {
     // Gửi lỗi ra Serial MẶC ĐỊNH
     Serial.print("Loi Checksum (Tinh: 0x"); 
@@ -63,6 +72,24 @@ void parseSdsData() {
   }
 
 }
+
+
+// --------------------------------------------------------
+// HÀM: Cập nhật mảng lịch sử (FIFO - 16 mẫu)
+// --------------------------------------------------------
+void updateHistory(int new_aqi25, int new_aqi10) {
+    // 1. Dịch chuyển tất cả các mẫu cũ sang phải (từ cuối mảng về vị trí [1])
+    // Ví dụ: [0] -> [1], [1] -> [2], ..., [MAX_SAMPLES-2] -> [MAX_SAMPLES-1]
+    for (int i = MAX_SAMPLES - 1; i > 0; i--) {
+        aqi25_history[i] = aqi25_history[i - 1];
+        aqi10_history[i] = aqi10_history[i - 1];
+    }
+    
+    // 2. Thêm giá trị mới vào vị trí đầu tiên [0]
+    aqi25_history[0] = new_aqi25;
+    aqi10_history[0] = new_aqi10;
+}
+
 
 // --------------------------------------------------------
 // HÀM: Hiển thị lên màn hình OLED
@@ -101,46 +128,84 @@ void displayData() {
 // --------------------------------------------------------
 void plotData() {
   u8g2.clearBuffer(); 
-  u8g2.setFontMode(1); // Set transparent mode
-  
-  // Chiều cao màn hình (64px) cho giá trị tối đa (64 ug/m3)
-  const int MAX_HEIGHT = 64; 
-  const int BAR_WIDTH = 30;
-  
-  // --- Xử lý giá trị PM2.5 (Phần bên trái) ---
-  // Giới hạn giá trị ở 64 (1 pixel/ug)
-  int pm25_capped = (int)round(min(pm25_val, (float)MAX_HEIGHT)); 
-  int pm25_bar_x = 17; // x = (64 - 30) / 2
-  int pm25_bar_y_top = MAX_HEIGHT - pm25_capped; // Bar vẽ từ dưới lên
-  
-  // 1. Vẽ cột PM2.5
-  u8g2.drawBox(pm25_bar_x, pm25_bar_y_top, BAR_WIDTH, pm25_capped);
-  
-  // 2. Vẽ nhãn và giá trị PM2.5
-  u8g2.setFont(u8g2_font_7x13_mf); // Font nhỏ để hiển thị giá trị
-  u8g2.drawStr(10, 10, "PM2.5");
-  u8g2.setCursor(15, 25);
-  u8g2.print(pm25_val, 1);
-  u8g2.drawStr(20, 40, "ug/m3");
+    u8g2.setFontMode(1); 
+    
+    const int CENTER_X = 63; 
+    const int CHART_HEIGHT = 40; 
+    const int CHART_Y_START = 63; 
+    const int X_STEP = 4; // 4 pixels/sample
 
-  // --- Xử lý giá trị PM10 (Phần bên phải) ---
-  int pm10_capped = (int)round(min(pm10_val, (float)MAX_HEIGHT));
-  int pm10_bar_x = 64 + 17; // x = 64 + (64 - 30) / 2
-  int pm10_bar_y_top = MAX_HEIGHT - pm10_capped; 
-  
-  // 3. Vẽ cột PM10
-  u8g2.drawBox(pm10_bar_x, pm10_bar_y_top, BAR_WIDTH, pm10_capped);
+    // --- TIÊU ĐỀ VÀ GIÁ TRỊ HIỆN TẠI ---
+    u8g2.setFont(u8g2_font_7x13_mf);    
+    u8g2.drawStr(3, 12, "AQI 2.5   AQI 10"); 
+    
+    // Vẽ đường phân chia và trục X chung
+    u8g2.drawVLine(CENTER_X, 0, 64); 
+    u8g2.drawHLine(0, CHART_Y_START, 128); 
 
-  // 4. Vẽ nhãn và giá trị PM10
-  u8g2.drawStr(64 + 10, 10, "PM10");
-  u8g2.setCursor(64 + 15, 25);
-  u8g2.print(pm10_val, 1);
-  u8g2.drawStr(64 + 20, 40, "ug/m3");
-  
-  // 5. Vẽ đường phân chia ở giữa (x=63)
-  u8g2.drawVLine(63, 0, MAX_HEIGHT); 
+    // --- VẼ ĐỒ THỊ ---
+    // Chúng ta sẽ vẽ mảng từ trái sang phải, nhưng truy cập mảng theo thứ tự đảo ngược
+    int prev_x_25 = -1;
+    int prev_y_25 = -1;
+    int prev_x_10 = -1;
+    int prev_y_10 = -1;
+    
+    // Lặp qua các vị trí X trên màn hình (i từ 0 đến 15)
+    for (int i = 0; i < MAX_SAMPLES; i++) {
+        
+        // Chỉ số của dữ liệu trong mảng: i=0 là điểm cũ nhất (vị trí [15]), i=15 là điểm mới nhất (vị trí [0])
+        int data_index = MAX_SAMPLES - 1 - i; 
 
-  u8g2.sendBuffer(); 
+        // Lấy giá trị AQI
+        int capped_aqi_25 = min(aqi25_history[data_index], MAX_AQI_VALUE);
+        int capped_aqi_10 = min(aqi10_history[data_index], MAX_AQI_VALUE);
+
+        // Tỷ lệ Y
+        float scaled_value_25 = (float)capped_aqi_25 * ((float)CHART_HEIGHT / (float)MAX_AQI_VALUE);
+        float scaled_value_10 = (float)capped_aqi_10 * ((float)CHART_HEIGHT / (float)MAX_AQI_VALUE);
+        
+        // --- 1. AQI 2.5 (LEFT CHART) ---
+        int current_x_25 = i * X_STEP; // X-axis 0 đến 60
+        int current_y_25 = (int)round(CHART_Y_START - scaled_value_25);
+        
+        // Vẽ đường nối AQI 2.5
+        if (prev_x_25 != -1) {
+            u8g2.drawLine(prev_x_25, prev_y_25, current_x_25, current_y_25);
+            // HIển thị giá trị AQI ở trên hoặc dưới đồ thị)
+            if (current_y_25 < 40) {
+              u8g2.setCursor(40, current_y_25+14);
+            } else {
+              u8g2.setCursor(40, current_y_25-14);  
+            }
+            // Hiển thị mức AQI hiện thời
+            u8g2.print(aqi25_history[0]); 
+        }
+        
+        // --- 2. AQI 10 (RIGHT CHART) ---
+        int current_x_10 = CENTER_X + (i * X_STEP); // X-axis 63 đến 127
+        int current_y_10 = (int)round(CHART_Y_START - scaled_value_10);
+        
+        // Vẽ đường nối AQI 10
+        if (prev_x_10 != -1) {
+            u8g2.drawLine(prev_x_10, prev_y_10, current_x_10, current_y_10);
+            // Xác định vị trí hiển thị mức AQI hiện thời, trên hay dưới đường đồ thị
+            if (current_y_10 < 40) {
+              u8g2.setCursor(CENTER_X + 40, current_y_10 + 14);
+            } else {
+              u8g2.setCursor(CENTER_X + 40, current_y_10 - 14);  
+            }
+            // Hiển thị mức AQI hiện thời
+            u8g2.print(aqi10_history[0]);
+        }
+        
+        // --- Cập nhật biến lưu trữ ---
+        prev_x_25 = current_x_25;
+        prev_y_25 = current_y_25;
+        prev_x_10 = current_x_10;
+        prev_y_10 = current_y_10;
+    }
+    
+    u8g2.sendBuffer();
 }
 
 // --------------------------------------------------------
@@ -197,6 +262,86 @@ const char* getAQIComment(float pmValue, const char* type) {
 }
 
 // --------------------------------------------------------
+// HÀM MỚI: Tính toán chỉ số AQI từ nồng độ PM
+// --------------------------------------------------------
+int calculateAQI(float pmValue, const char* type) {
+    
+    // Khai báo các điểm giới hạn AQI (US EPA Standard 24-hour)
+    // C_breakpoints: Nồng độ PM (ug/m3)
+    // I_breakpoints: Chỉ số AQI
+    
+    float C_breakpoints[6]; // Concentration breakpoints
+    int I_breakpoints[6];   // AQI Index breakpoints
+    
+    // Số lượng ngưỡng AQI (0-50, 51-100, 101-150, 151-200, 201-300, 301-500)
+    const int NUM_BREAKPOINTS = 6; 
+    
+    // Nếu là PM2.5
+    if (strcmp(type, "PM2.5") == 0) {
+        // Nồng độ PM2.5 (ug/m3)
+        C_breakpoints[0] = 0.0; C_breakpoints[1] = 12.1; C_breakpoints[2] = 35.5; 
+        C_breakpoints[3] = 55.5; C_breakpoints[4] = 150.5; C_breakpoints[5] = 250.5;
+        // Chỉ số AQI tương ứng
+        I_breakpoints[0] = 0; I_breakpoints[1] = 51; I_breakpoints[2] = 101; 
+        I_breakpoints[3] = 151; I_breakpoints[4] = 201; I_breakpoints[5] = 301;
+    } 
+    // Nếu là PM10
+    else if (strcmp(type, "PM10") == 0) {
+        // Nồng độ PM10 (ug/m3)
+        C_breakpoints[0] = 0; C_breakpoints[1] = 55; C_breakpoints[2] = 155; 
+        C_breakpoints[3] = 255; C_breakpoints[4] = 355; C_breakpoints[5] = 425;
+        // Chỉ số AQI tương ứng
+        I_breakpoints[0] = 0; I_breakpoints[1] = 51; I_breakpoints[2] = 101; 
+        I_breakpoints[3] = 151; I_breakpoints[4] = 201; I_breakpoints[5] = 301;
+    }
+    // Trường hợp không xác định (nên có kiểm tra lỗi tốt hơn)
+    else {
+        return -1; // Trả về lỗi
+    }
+
+    // 1. Xử lý trường hợp vượt ngưỡng cao nhất
+    if (pmValue >= 500.5 && strcmp(type, "PM2.5") == 0) return 500;
+    if (pmValue >= 604 && strcmp(type, "PM10") == 0) return 500;
+    
+    // 2. Tìm kiếm C_Lo, C_Hi, I_Lo, I_Hi
+    int I_Lo = 0;
+    int I_Hi = 50;
+    float C_Lo = 0.0;
+    float C_Hi = 12.0;
+    
+    for (int i = 0; i < NUM_BREAKPOINTS; i++) {
+        // Kiểm tra xem giá trị C có nằm trong khoảng [C_Lo, C_Hi) không
+        if (pmValue >= C_breakpoints[i]) {
+            C_Lo = C_breakpoints[i];
+            I_Lo = I_breakpoints[i];
+            
+            // Tìm C_Hi và I_Hi
+            if (i < NUM_BREAKPOINTS - 1) {
+                // Ví dụ: khoảng 0-12.0 (i=0) => C_Hi là 12.1 (i=1), I_Hi là 100
+                C_Hi = C_breakpoints[i+1];
+                I_Hi = I_breakpoints[i+1] - 1; // Lấy ngưỡng trên của khoảng AQI (50, 100, 150,...)
+                if (i==0) I_Hi = 50; // Xử lý đặc biệt cho khoảng 0-50
+            } else {
+                // Xử lý khoảng cuối cùng (301-500)
+                C_Hi = (strcmp(type, "PM2.5") == 0) ? 500.4 : 604;
+                I_Hi = 500;
+            }
+        }
+    }
+    
+    // Xử lý trường hợp nồng độ bằng C_Lo
+    if (pmValue <= C_Lo) return I_Lo;
+
+
+    // 3. Thực hiện công thức nội suy tuyến tính (Linear Interpolation)
+    
+    float aqi_float = (float)(I_Hi - I_Lo) / (C_Hi - C_Lo) * (pmValue - C_Lo) + I_Lo;
+    
+    // Trả về giá trị AQI làm tròn
+    return (int)round(aqi_float);
+}
+
+// --------------------------------------------------------
 // HÀM MỚI: Hiển thị giá trị và Nhận xét AQI
 // --------------------------------------------------------
 void displayLevel() {
@@ -207,37 +352,34 @@ void displayLevel() {
   const int CENTER_X = 64;
   const int PM10_START_X = CENTER_X + 2; // Bắt đầu từ 66
 
-  // Vẽ đường phân chia ở giữa
-  u8g2.drawVLine(CENTER_X, 0, 64); 
+ 
+  // 1. Tiêu đề
+  u8g2.drawStr(10, 10, "PM2.5  AQI  PM10");
+
+  // 2. Vẽ đường phân chia ở giữa
+  u8g2.drawVLine(CENTER_X, 15, 64); 
 
   // --- PHẦN BÊN TRÁI: PM2.5 ---
+  // 3. Giá trị thực tế
+  u8g2.setCursor(5, 45);
+  u8g2.setFont(u8g2_font_helvR24_tr); // Font lớn hơn cho số liệu
+  u8g2.print(aqi25_history[0]);
   
-  // 1. Tiêu đề
-  u8g2.drawStr(10, 10, "PM2.5");
-  
-  // 2. Giá trị thực tế
-  u8g2.setCursor(5, 30);
-  u8g2.setFont(u8g2_font_helvR14_tr); // Font lớn hơn cho số liệu
-  u8g2.print(pm25_val, 1);
-  
-  // 3. Nhận xét (Tốt/Vừa/Kém/Hại)
+  // 4. Nhận xét (Tốt/Vừa/Kém/Hại)
   const char* comment25 = getAQIComment(pm25_val, "PM2.5");
   u8g2.setFont(u8g2_font_unifont_t_vietnamese1);
   u8g2.drawUTF8(5, 62, comment25);
 
   
   // --- PHẦN BÊN PHẢI: PM10 ---
-
-  // 1. Tiêu đề
-  u8g2.drawStr(PM10_START_X + 10, 10, "PM10");
-  
-  // 2. Giá trị thực tế
-  u8g2.setCursor(PM10_START_X + 5, 30);
-  u8g2.setFont(u8g2_font_helvR14_tr); 
-  u8g2.print(pm10_val, 1);
+ 
+  // 5. Giá trị thực tế
+  u8g2.setCursor(PM10_START_X + 5, 45);
+  u8g2.setFont(u8g2_font_helvR24_tr); 
+  u8g2.print(aqi10_history[0]);
 
   
-  // 3. Nhận xét (Tốt/Vừa/Kém/Hại)
+  // 6. Nhận xét (Tốt/Vừa/Kém/Hại)
   const char* comment10 = getAQIComment(pm10_val, "PM10");
   u8g2.setFont(u8g2_font_unifont_t_vietnamese1);
   u8g2.drawUTF8(PM10_START_X + 5, 62, comment10);
@@ -270,6 +412,8 @@ void loop() {
 
       // Phân tích và hiển thị lên OLED
       parseSdsData();
+      // Lưu mảng lịch sử 
+      updateHistory(calculateAQI(pm25_val,"PM2.5"), calculateAQI(pm10_val,"PM10"));
       if (g_mode == 0) {
         displayData();
       } else if (g_mode == 1) {
