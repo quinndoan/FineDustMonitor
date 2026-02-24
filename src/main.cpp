@@ -3,6 +3,7 @@
 #include <SoftwareSerial.h> // Bắt buộc phải có để dùng Serial trên D5/D6
 #include "wifi_manager.h"   // Quản lý wifi
 #include "greetingcard.h"   // Giao diện chào trên màn hình điện tử
+#include "buttongesture.h"  // Quản lý các hình thái bấm của 1 nút button
 #include "main.h"           // Cấu hình chính
 
 // --- CẤU HÌNH SOFTWARE SERIAL CHO SDS011 ---
@@ -26,8 +27,8 @@ int aqi25_history[MAX_SAMPLES] = {0};
 int aqi10_history[MAX_SAMPLES] = {0};
 int sample_index = 0;
 
-// --- NÚT BẤM -----
-#define CFG_BUTTON D7
+/** Quản lý các hình thái bấm của 1 nút button */
+ButtonGesture configBtn(CFG_BUTTON);
 
 // Chọn tên font mới
 #define VIETNAMESE_FONT u8g2_font_unifont_t_vietnamese2
@@ -220,14 +221,17 @@ void plotData()
   // Hiển thị mức AQI hiện thời
   u8g2.print(aqi25_history[0]);
 
-  if (aqi10_history[0] > 37) {
+  if (aqi10_history[0] > 37)
+  {
     u8g2.setCursor(CENTER_X + 40, 54);
-  } else {
+  }
+  else
+  {
     u8g2.setCursor(CENTER_X + 40, 35);
   }
   u8g2.print(aqi10_history[0]);
 
-  // Hiển thị 
+  // Hiển thị
   u8g2.sendBuffer();
 }
 
@@ -252,15 +256,15 @@ void setup()
   digitalWrite(LED_BUILTIN, LOW);
 
   // 5. Nút bấm
-  pinMode(CFG_BUTTON, INPUT_PULLUP);
+  configBtn.begin();
 
   // 6. Mode hoạt động
   g_mode = MODE_INFO;
 
   // Màn hinh chào
   showWelcomeScreen(u8g2, "", "");
-  
-  //Kiêm tra wifi.
+
+  // Kiêm tra wifi.
   loadWiFiConfig();
   // Kết nối lần đầu
   handleWiFiConnection();
@@ -459,16 +463,26 @@ void loop()
   // WiFi được duy trì liên tục. Sễ passthough nếu thành công rồi
   handleWiFiConnection();
 
+  // Kiểm tra sự kiện phím bấm
+  ButtonEvent evt = configBtn.update();
+
   // Hiển thị Led chỉ thị mặc định theo nút bấm
-  if (digitalRead(CFG_BUTTON) == LOW)
+  if (evt == SHORT_PRESS)
   {
+    Serial.println("Bam nhanh: Chuyen Mode");
     g_mode = (g_mode + 1) % MODE_NUM;
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(200); // Tránh nhảy phím đơn giản
   }
-  else
+  else if (evt == DOUBLE_CLICK)
   {
-    digitalWrite(LED_BUILTIN, HIGH);
+    Serial.println("Bam dup: Reset thong so hoặc một lệnh gì đó");
+  }
+  else if (evt == LONG_PRESS_2S)
+  {
+    Serial.println("Giu 2s: Bat/Tat WiFi");
+    wifiEnabled = !wifiEnabled;
+
+    // Cập nhật file cấu hình
+    // saveWiFiEnabledStatus(wifiEnabled);
   }
 
   // Đọc từ cổng Software Serial (sdsSerial)

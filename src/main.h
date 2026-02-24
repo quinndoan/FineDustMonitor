@@ -16,4 +16,7 @@ extern String wifiPass;
 extern bool wifiStatus; // Trạng thái kết nối: true = connected
 extern bool wifiEnabled;// Bắt bật wifi. Khi = false thì   wifiStatus cũng là false luôn
 
+// --- NÚT BẤM -----
+#define CFG_BUTTON D7
+
 #endif
