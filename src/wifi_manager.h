@@ -10,5 +10,7 @@
 void loadWiFiConfig();
 bool checkWiFiConnection();
 void handleWiFiConnection();
+void WakeupWiFi();
+void ShutdownWiFi();
 
 #endif

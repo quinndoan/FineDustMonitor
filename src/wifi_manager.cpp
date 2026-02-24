@@ -93,3 +93,32 @@ void handleWiFiConnection()
         }
     }
 }
+
+void WakeupWiFi() {
+    #ifdef _DEBUG_
+        Serial.println("[WiFi] Waking up WiFi...");
+    #endif
+
+    #if defined(ARDUINO_ARCH_ESP8266)
+        // Đánh thức ESP8266 khỏi chế độ forceSleep
+        WiFi.forceSleepWake();
+        delay(1); 
+    #endif
+
+    // Khởi động lại chế độ Station
+    WiFi.mode(WIFI_STA);
+    
+}
+
+void ShutdownWiFi() {
+    #ifdef _DEBUG_
+    Serial.println("[WiFi] Shutting down WiFi to save power...");
+    #endif
+
+    WiFi.disconnect(true);    // Ngắt kết nối và xóa cấu hình tạm thời
+    WiFi.mode(WIFI_OFF);     // Tắt chip Radio RF
+
+    #if defined(ARDUINO_ARCH_ESP8266)
+        WiFi.forceSleepBegin(); // Lệnh đặc biệt cho ESP8266 để ngủ sâu hơn
+    #endif
+}

@@ -15,4 +15,7 @@ void showWelcomeScreen(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2, const char* wif
 // Hàm hiển thị thông số từ Flash
 void showFlashConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2);
 
+// Màn hình thông số AP
+void showAPConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2, char * apname, char * password);
+
 #endif

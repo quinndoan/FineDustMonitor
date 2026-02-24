@@ -4,6 +4,7 @@
 #include "wifi_manager.h"   // Quản lý wifi
 #include "greetingcard.h"   // Giao diện chào trên màn hình điện tử
 #include "buttongesture.h"  // Quản lý các hình thái bấm của 1 nút button
+#include "WiFiSelfEnroll.h" // Quản lý cấu hình wifi
 #include "main.h"           // Cấu hình chính
 
 // --- CẤU HÌNH SOFTWARE SERIAL CHO SDS011 ---
@@ -29,6 +30,9 @@ int sample_index = 0;
 
 /** Quản lý các hình thái bấm của 1 nút button */
 ButtonGesture configBtn(CFG_BUTTON);
+
+/** Quản lý cấu hình wifi động*/
+WiFiSelfEnroll* MyWiFi = nullptr;
 
 // Chọn tên font mới
 #define VIETNAMESE_FONT u8g2_font_unifont_t_vietnamese2
@@ -472,17 +476,26 @@ void loop()
     Serial.println("Bam nhanh: Chuyen Mode");
     g_mode = (g_mode + 1) % MODE_NUM;
   }
-  else if (evt == DOUBLE_CLICK)
+  else if (evt == DOUBLE_CLICK and g_mode == MODE_INFO)
   {
-    Serial.println("Bam dup: Reset thong so hoặc một lệnh gì đó");
-  }
-  else if (evt == LONG_PRESS_2S)
+    if (wifiEnabled) {
+      Serial.println("Tắt WiFi");
+      ShutdownWiFi();
+      wifiEnabled = false;
+    } else {
+      Serial.println("Bật WiFi");
+      WakeupWiFi();
+      wifiEnabled = true;
+      // hàm  handleWiFiConnection(); sẽ làm nốt phần việc còn lại ở đầu vòng lắp
+
+    }
+  } else if (evt == LONG_PRESS_2S)
   {
     Serial.println("Giu 2s: Bat/Tat WiFi");
-    wifiEnabled = !wifiEnabled;
-
-    // Cập nhật file cấu hình
-    // saveWiFiEnabledStatus(wifiEnabled);
+    showAPConfig(u8g2, SOICT_WIFI_SSID, SOICT_WIFI_PASSWORD);
+    if (MyWiFi == nullptr) MyWiFi = new WiFiSelfEnroll();
+      // Kích hoạt trạm phát AP để user vào cài đặt
+    MyWiFi->setup();
   }
 
   // Đọc từ cổng Software Serial (sdsSerial)

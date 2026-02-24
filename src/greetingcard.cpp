@@ -125,3 +125,26 @@ void showFlashConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2)
 
 	u8g2.sendBuffer();
 }
+
+
+
+void showAPConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2, char * apname, char * password )
+{
+	u8g2.clearBuffer();
+
+	// Tiêu đề
+	u8g2.setFont(u8g2_font_6x12_tr);
+	u8g2.setCursor(0, 10);
+	u8g2.print("--- Access Point ---");
+
+	int y = 25;
+	// Hiển thị SSID
+	drawSmartText(u8g2, 0, y, "AP: ", apname);
+	// Hiển thị SSID
+	drawSmartText(u8g2, 0, y, "Password: ", password);
+
+	// Hiển thị Device ID
+	u8g2.drawStr(0, y, "IP: 192.168.15.1");
+
+	u8g2.sendBuffer();
+}
