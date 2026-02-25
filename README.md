@@ -261,13 +261,13 @@ graph TD
     deviceid,ssid,mac,topic write,topic read
   ```
 
-- Topic __dust_v2/deviceid/up__ : write với nội dung dạng (Thay đổi bằng macro __MQTT_TOPIC_UP_TEMPLATE__)
+- Topic __dust_v2/deviceid/data__ : write với nội dung dạng (Thay đổi bằng macro __MQTT_TOPIC_UP_TEMPLATE__)
 
   ```csv
-    pm2.5 ug/m3,pm10 ug/m3,pm2.5 AQI,pm10 AQI
+    pm2.5 ug/m3,pm2.5 AQI,pm10 ug/m3,pm10 AQI
   ```
 
-- Topic __dust_v2/deviceid/down__ : read  (Thay đổi bằng macro __MQTT_TOPIC_DOWN_TEMPLATE__)
+- Topic __dust_v2/deviceid/cmd__ : read  (Thay đổi bằng macro __MQTT_TOPIC_DOWN_TEMPLATE__)
   - Lệnh khởi động lại thiết bị
 
     ```csv
@@ -275,3 +275,7 @@ graph TD
     ```
 
 ![mqtt package](mqttpackage.png)
+
+## Website xem số liệu
+
+ [Website](./www/index.html)

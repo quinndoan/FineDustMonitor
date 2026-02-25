@@ -14,8 +14,8 @@
 // --- CẤU HÌNH TOPIC (Sử dụng DeviceID để cá nhân hóa) ---
 // Upstream: Thiết bị -> Server (Gửi dữ liệu)
 // Downstream: Server -> Thiết bị (Nhận lệnh)
-#define MQTT_TOPIC_UP_TEMPLATE "dust_v2/%s/up"
-#define MQTT_TOPIC_DOWN_TEMPLATE "dust_v2/%s/down"
+#define MQTT_TOPIC_UP_TEMPLATE "dust_v2/%s/data"
+#define MQTT_TOPIC_DOWN_TEMPLATE "dust_v2/%s/cmd"
 #define MQTT_TOPIC_STARTUP "startup" // Topic chung cho mọi thiết bị báo danh
 #define MQTT_CLIENT_ID_PREFIX "dust_v2-" // Công thức tạo mqtt client id = MQTT_CLIENT_ID_PREFIX + <deviceid> 
 

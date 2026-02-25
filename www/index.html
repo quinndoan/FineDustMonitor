@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống Giám sát Bụi PM2.5/PM 10 trong không khí</title>
+    
+    <!-- Bootstrap 5 CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome cho Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: transform 0.2s; }
+        .status-dot { height: 12px; width: 12px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .online { background-color: #28a745; box-shadow: 0 0 8px #28a745; }
+        .offline { background-color: #dc3545; box-shadow: 0 0 8px #dc3545; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
+        
+        /* Layout giá trị hiện thời với Min/Max */
+        .value-box { position: relative; padding: 25px 0; min-height: 120px; display: flex; align-items: center; justify-content: center; }
+        .data-value { font-size: 3.2rem; font-weight: bold; line-height: 1; z-index: 2; }
+        .val-min { position: absolute; bottom: 5px; right: 5px; font-size: 0.85rem; color: #0d6efd; font-weight: bold; background: rgba(13, 110, 253, 0.1); padding: 2px 6px; border-radius: 4px; }
+        .val-max { position: absolute; top: 5px; right: 5px; font-size: 0.85rem; color: #dc3545; font-weight: bold; background: rgba(220, 53, 69, 0.1); padding: 2px 6px; border-radius: 4px; }
+        
+        .unit { font-size: 0.8rem; color: #6c757d; text-transform: uppercase; margin-top: -10px; display: block; }
+        .aqi-label { font-size: 0.75rem; font-weight: bold; padding: 2px 8px; border-radius: 10px; }
+        .bg-aqi-good { background-color: #d4edda; color: #155724; }
+        .bg-aqi-mod { background-color: #fff3cd; color: #856404; }
+        .bg-aqi-unhealthy { background-color: #f8d7da; color: #721c24; }
+        
+        .config-label { font-weight: 600; color: #495057; width: 110px; display: inline-block; }
+        .map-container { border-radius: 10px; overflow: hidden; border: 1px solid #dee2e6; height: 220px; }
+        .stats-footer { background: #fff; border-top: 1px solid #eee; padding: 15px; border-radius: 15px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-primary mb-4 shadow-sm">
+    <div class="container">
+        <span class="navbar-brand mb-0 h1">
+            <i class="fas fa-microchip me-2"></i>Air Monitor System Pro
+        </span>
+        <div class="d-flex align-items-center">
+            <span id="mqtt-status-dot" class="status-dot offline"></span>
+            <span id="mqtt-status-text" class="text-light small">Đang ngắt kết nối</span>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <!-- Hàng chỉ số chính -->
+    <div class="row g-3 mb-4 text-center">
+        <!-- PM2.5 Group -->
+        <div class="col-md-6">
+            <div class="card p-3 border-bottom border-primary border-4">
+                <div class="row align-items-center">
+                    <div class="col-6 border-end">
+                        <div class="text-uppercase text-muted small fw-bold">PM2.5 (ug/m3)</div>
+                        <div class="value-box">
+                            <span class="val-max" title="Max PM2.5" id="max-pm25">--</span>
+                            <span class="data-value text-primary" id="val-pm25">--</span>
+                            <span class="val-min" title="Min PM2.5" id="min-pm25">--</span>
+                        </div>
+                        <span class="unit">nồng độ</span>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-uppercase text-muted small fw-bold">AQI PM2.5</div>
+                        <div class="value-box">
+                            <span class="val-max" title="Max AQI 2.5" id="max-aqi25">--</span>
+                            <span class="data-value text-primary" id="val-aqi-pm25">--</span>
+                            <span class="val-min" title="Min AQI 2.5" id="min-aqi25">--</span>
+                        </div>
+                        <span id="label-aqi-pm25" class="aqi-label d-none">Tốt</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- PM10 Group -->
+        <div class="col-md-6">
+            <div class="card p-3 border-bottom border-success border-4">
+                <div class="row align-items-center">
+                    <div class="col-6 border-end">
+                        <div class="text-uppercase text-muted small fw-bold">PM10 (ug/m3)</div>
+                        <div class="value-box">
+                            <span class="val-max" title="Max PM10" id="max-pm10">--</span>
+                            <span class="data-value text-success" id="val-pm10">--</span>
+                            <span class="val-min" title="Min PM10" id="min-pm10">--</span>
+                        </div>
+                        <span class="unit">nồng độ</span>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-uppercase text-muted small fw-bold">AQI PM10</div>
+                        <div class="value-box">
+                            <span class="val-max" title="Max AQI 10" id="max-aqi10">--</span>
+                            <span class="data-value text-success" id="val-aqi-pm10">--</span>
+                            <span class="val-min" title="Min AQI 10" id="min-aqi10">--</span>
+                        </div>
+                        <span id="label-aqi-pm10" class="aqi-label d-none">Tốt</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cấu hình & Vị trí -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center" 
+                     style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#collapseConfig">
+                    <h6 class="m-0 fw-bold text-dark"><i class="fas fa-cog me-2 text-primary"></i>Cấu hình & Vị trí</h6>
+                    <h6 class="m-0 fw-bold text-dark">Nhà B1, ĐHBKHN</h6>
+                    <i class="fas fa-chevron-down text-muted"></i>
+                </div>
+                <div id="collapseConfig" class="collapse">
+                    <div class="card-body bg-light border-top">
+                        <div class="row">
+                            <div class="col-md-6 border-end">
+                                <div class="mb-3">
+                                    <p class="mb-2 small"><span class="config-label">Device ID:</span> <span id="conf-deviceid" class="badge bg-secondary text-white">--</span></p>
+                                    <p class="mb-2 small"><span class="config-label">Topic Data:</span> <code id="conf-topic-up">--</code></p>
+                                </div>
+                                <div class="p-3 bg-white border rounded-3 mb-3">
+                                    <button id="btn-reboot" class="btn btn-danger btn-sm w-100 fw-bold" onclick="sendReboot()" disabled>
+                                        <i class="fas fa-power-off me-2"></i>REBOOT THIẾT BỊ
+                                    </button>
+                                    <div id="command-feedback" class="mt-2 alert alert-info py-1 small d-none text-center"></div>
+                                </div>
+                                <p class="mb-1 small fw-bold text-success"><i class="fas fa-map-marker-alt me-1"></i>Vị trí:</p>
+                                <p class="small text-muted mb-2">Phòng B1-801, Khoa Kỹ thuật Máy tính, Trường CNTT&TT, ĐHBKHN.</p>
+                                <a href="https://maps.app.goo.gl/vNJK7kW3iqysk8C2A" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3">Mở Maps</a>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="map-container">
+                                    <iframe src="https://www.google.com/maps/embed?pb=!1m10!1m8!1m3!1d5623.590569057968!2d105.8435312874953!3d21.00323091086393!3m2!1i1024!2i768!4f13.1!5e1!3m2!1sen!2s!4v1772034487317!5m2!1sen!2s" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Biểu đồ -->
+    <div class="row g-4 mb-4">
+        <!-- Biểu đồ Nồng độ (ug/m3) -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 fw-bold"><i class="fas fa-smog me-2 text-primary"></i>Nồng độ bụi (ug/m3)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartConcentration"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Biểu đồ AQI -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 fw-bold"><i class="fas fa-mask me-2 text-success"></i>Chỉ số AQI</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartAQI"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tóm tắt & Điều khiển -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card shadow-sm stats-footer">
+                <div class="row align-items-center">
+                    <div class="col-md-5 mb-3 mb-md-0">
+                        <div class="d-flex flex-wrap gap-3 small">
+                            <div class="text-muted"><i class="fas fa-play-circle text-primary me-1"></i>Bắt đầu: <span id="stat-start-time" class="fw-bold text-dark">--:--:--</span></div>
+                            <div class="text-muted"><i class="fas fa-hourglass-half text-warning me-1"></i>Thời lượng: <span id="stat-duration" class="fw-bold text-dark">0s</span></div>
+                        </div>
+                    </div>
+                    <div class="col-md-7">
+                        <div class="d-flex flex-wrap justify-content-md-end align-items-center gap-3">
+                            <div class="form-check form-switch small mb-0">
+                                <input class="form-check-input" type="checkbox" id="checkMinMaxLine" onchange="updateCharts()">
+                                <label class="form-check-label text-muted" for="checkMinMaxLine">Đường Min/Max</label>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="small text-muted">Khung:</span>
+                                <select id="selectTimeFrame" class="form-select form-select-sm w-auto" onchange="updateCharts()">
+                                    <option value="all">Toàn bộ</option>
+                                    <option value="60">1 Phút</option>
+                                    <option value="300">5 Phút</option>
+                                    <option value="600">10 Phút</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="clearData()">
+                                <i class="fas fa-trash-alt me-1"></i>Xóa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Plugin để vẽ đường annotation (min/max) -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.1.0"></script>
+
+<script>
+    // --- STATE ---
+    const rawData = {
+        timestamps: [],
+        pm25: [],
+        pm10: [],
+        aqi25: [],
+        aqi10: []
+    };
+    
+    let startTime = null;
+    let activeDeviceId = "";
+
+    const CONFIG = {
+        host: 'mqtt.toolhub.app', port: 8084, path: '/mqtt',
+        user: 'demo', pass: 'demo',
+        subscribeTopic: 'dust_v2/tiennd/data'
+    };
+
+    // --- CHART SETUP ---
+    const commonOptions = (yTitle) => ({
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: { 
+            legend: { position: 'top', labels: { boxWidth: 10, usePointStyle: true, font: { size: 11 } } },
+            annotation: { annotations: {} }
+        },
+        scales: {
+            y: { beginAtZero: true, title: { display: true, text: yTitle, font: { weight: 'bold', size: 10 } } },
+            x: { ticks: { maxRotation: 0, font: { size: 9 } } }
+        }
+    });
+
+    const chartConc = new Chart(document.getElementById('chartConcentration'), {
+        type: 'line',
+        data: { labels: [], datasets: [
+            { label: 'PM2.5', borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.05)', data: [], tension: 0.3, fill: true, pointRadius: 0 },
+            { label: 'PM10', borderColor: '#198754', backgroundColor: 'rgba(25, 135, 84, 0.05)', data: [], tension: 0.3, fill: true, pointRadius: 0 }
+        ]},
+        options: commonOptions('ug/m3')
+    });
+
+    const chartAQI = new Chart(document.getElementById('chartAQI'), {
+        type: 'line',
+        data: { labels: [], datasets: [
+            { label: 'AQI 2.5', borderColor: '#6610f2', backgroundColor: 'rgba(102, 16, 242, 0.05)', data: [], tension: 0.3, fill: true, pointRadius: 0 },
+            { label: 'AQI 10', borderColor: '#fd7e14', backgroundColor: 'rgba(253, 126, 20, 0.05)', data: [], tension: 0.3, fill: true, pointRadius: 0 }
+        ]},
+        options: commonOptions('Chỉ số AQI')
+    });
+
+    // --- LOGIC ---
+
+    function updateDuration() {
+        if (!startTime) return;
+        const now = new Date();
+        const diff = Math.floor((now - startTime) / 1000);
+        let text = diff < 100 ? `${diff} giây` : `${(diff / 60).toFixed(1)} phút`;
+        document.getElementById('stat-duration').innerText = text;
+    }
+
+    function processMessage(payload, topic) {
+        if (!startTime) {
+            startTime = new Date();
+            document.getElementById('stat-start-time').innerText = startTime.toLocaleTimeString();
+        }
+
+        let vals = [];
+        try {
+            // Định dạng: pm2.5 ug/m3, pm2.5 AQI, pm10 ug/m3, pm10 AQI
+            vals = payload.split(',').map(v => parseFloat(v.trim()));
+            if (vals.length < 4) return;
+        } catch(e) { return; }
+
+        const [pm25, aqi25, pm10, aqi10] = vals;
+        const now = new Date();
+
+        // Lưu trữ
+        rawData.timestamps.push(now);
+        rawData.pm25.push(pm25);
+        rawData.aqi25.push(aqi25);
+        rawData.pm10.push(pm10);
+        rawData.aqi10.push(aqi10);
+
+        // Hiển thị hiện thời
+        document.getElementById('val-pm25').innerText = pm25;
+        document.getElementById('val-aqi-pm25').innerText = aqi25;
+        document.getElementById('val-pm10').innerText = pm10;
+        document.getElementById('val-aqi-pm10').innerText = aqi10;
+
+        // Cập nhật Min/Max UI dựa trên toàn bộ dữ liệu hiện có
+        document.getElementById('min-pm25').innerText = Math.min(...rawData.pm25);
+        document.getElementById('max-pm25').innerText = Math.max(...rawData.pm25);
+        document.getElementById('min-aqi25').innerText = Math.min(...rawData.aqi25);
+        document.getElementById('max-aqi25').innerText = Math.max(...rawData.aqi25);
+        document.getElementById('min-pm10').innerText = Math.min(...rawData.pm10);
+        document.getElementById('max-pm10').innerText = Math.max(...rawData.pm10);
+        document.getElementById('min-aqi10').innerText = Math.min(...rawData.aqi10);
+        document.getElementById('max-aqi10').innerText = Math.max(...rawData.aqi10);
+
+        updateAQILabel('label-aqi-pm25', aqi25);
+        updateAQILabel('label-aqi-pm10', aqi10);
+        
+        // MQTT Meta
+        const parts = topic.split('/');
+        if(parts.length >= 2) {
+            activeDeviceId = parts[1];
+            document.getElementById('conf-deviceid').innerText = activeDeviceId;
+            document.getElementById('conf-topic-up').innerText = topic;
+            document.getElementById('btn-reboot').disabled = false;
+        }
+
+        updateCharts();
+    }
+
+    function updateCharts() {
+        const timeFrame = document.getElementById('selectTimeFrame').value;
+        const showLines = document.getElementById('checkMinMaxLine').checked;
+        const now = new Date();
+        
+        let filteredIndices = [];
+        rawData.timestamps.forEach((t, i) => {
+            if (timeFrame === 'all' || (now - t) / 1000 <= parseInt(timeFrame)) {
+                filteredIndices.push(i);
+            }
+        });
+
+        const labels = filteredIndices.map(i => rawData.timestamps[i].toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}));
+        
+        // Update data
+        chartConc.data.labels = labels;
+        chartConc.data.datasets[0].data = filteredIndices.map(i => rawData.pm25[i]);
+        chartConc.data.datasets[1].data = filteredIndices.map(i => rawData.pm10[i]);
+
+        chartAQI.data.labels = labels;
+        chartAQI.data.datasets[0].data = filteredIndices.map(i => rawData.aqi25[i]);
+        chartAQI.data.datasets[1].data = filteredIndices.map(i => rawData.aqi10[i]);
+
+        // Cấu hình Annotation (Chỉ vẽ đường kẻ Min/Max, bỏ box background)
+        [chartConc, chartAQI].forEach(c => {
+            c.options.plugins.annotation.annotations = {};
+            if (showLines && filteredIndices.length > 0) {
+                // Lấy data của dataset đầu tiên để tính Min/Max trong khung hình hiện tại
+                const data = c.data.datasets[0].data;
+                const minVal = Math.min(...data);
+                const maxVal = Math.max(...data);
+
+                c.options.plugins.annotation.annotations = {
+                    lineMax: {
+                        type: 'line', yMin: maxVal, yMax: maxVal,
+                        borderColor: 'rgba(220, 53, 69, 0.6)', borderWidth: 1.5, borderDash: [5, 5],
+                        label: { display: true, content: 'Max: ' + maxVal, position: 'end', font: {size: 10}, backgroundColor: 'rgba(220,53,69,0.8)' }
+                    },
+                    lineMin: {
+                        type: 'line', yMin: minVal, yMax: minVal,
+                        borderColor: 'rgba(13, 110, 253, 0.6)', borderWidth: 1.5, borderDash: [5, 5],
+                        label: { display: true, content: 'Min: ' + minVal, position: 'start', font: {size: 10}, backgroundColor: 'rgba(13,110,253,0.8)' }
+                    }
+                };
+            }
+            c.update('none');
+        });
+        
+        updateDuration();
+    }
+
+    function updateAQILabel(id, value) {
+        const el = document.getElementById(id);
+        el.className = 'aqi-label';
+        if (value <= 50) { el.innerText = "Tốt"; el.classList.add('bg-aqi-good'); }
+        else if (value <= 100) { el.innerText = "Trung bình"; el.classList.add('bg-aqi-mod'); }
+        else { el.innerText = "Kém"; el.classList.add('bg-aqi-unhealthy'); }
+        el.classList.remove('d-none');
+    }
+
+    function clearData() {
+        rawData.timestamps = []; rawData.pm25 = []; rawData.pm10 = []; rawData.aqi25 = []; rawData.aqi10 = [];
+        startTime = new Date();
+        document.getElementById('stat-start-time').innerText = startTime.toLocaleTimeString();
+        // Reset UI labels
+        ['val-pm25','val-pm10','val-aqi-pm25','val-aqi-pm10','min-pm25','max-pm25','min-pm10','max-pm10','min-aqi25','max-aqi25','min-aqi10','max-aqi10'].forEach(id => {
+            document.getElementById(id).innerText = "--";
+        });
+        updateCharts();
+    }
+
+    // --- MQTT ---
+    const client = new Paho.MQTT.Client(CONFIG.host, CONFIG.port, CONFIG.path, "Web_" + Math.random().toString(16).substr(2, 5));
+    
+    client.onConnectionLost = () => {
+        document.getElementById('mqtt-status-dot').className = "status-dot offline";
+        document.getElementById('mqtt-status-text').innerText = "Ngắt kết nối";
+    };
+
+    client.onMessageArrived = (msg) => processMessage(msg.payloadString, msg.destinationName);
+
+    client.connect({
+        userName: CONFIG.user, password: CONFIG.pass, useSSL: true,
+        onSuccess: () => {
+            document.getElementById('mqtt-status-dot').className = "status-dot online";
+            document.getElementById('mqtt-status-text').innerText = "Máy chủ: Online";
+            client.subscribe(CONFIG.subscribeTopic);
+        }
+    });
+
+    function sendReboot() {
+        if (!activeDeviceId) return;
+        const msg = new Paho.MQTT.Message("reboot");
+        msg.destinationName = `dust_v2/${activeDeviceId}/cmd`;
+        client.send(msg);
+        const fb = document.getElementById('command-feedback');
+        fb.classList.remove('d-none'); fb.innerText = "Đã gửi Reboot!";
+        setTimeout(() => fb.classList.add('d-none'), 3000);
+    }
+
+    setInterval(updateDuration, 1000);
+</script>
+
+</body>
+</html>
