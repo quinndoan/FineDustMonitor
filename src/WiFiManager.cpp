@@ -1,7 +1,8 @@
 #include <LittleFS.h>
 #include <ESP8266WiFi.h>
 #include "WifiManager.h"
-#include "WiFiSelfEnroll.h" // Quản lý đăng kí tài khoản WiFi bằng self hosting
+#include "WiFiSelfEnroll.h"     // Quản lý đăng kí tài khoản WiFi bằng self hosting
+#include "WiFiEnrollBySerial.h" // Quản lý đăng kí tài khoản WiFi bằng lệnh serial
 #include "configmanager.h"
 #include "main.h"
 
@@ -80,13 +81,22 @@ WiFiSelfEnroll *MyWiFi = nullptr;
 
 bool RegisterWiFi(WIFI_REGISTRATION_METHODS method)
 {
-    switch (method) {
+    switch (method)
+    {
     case WIFI_REGISTRATION_METHODS::SELF_STATION:
+    {
         if (MyWiFi == nullptr)
+        {
             MyWiFi = new WiFiSelfEnroll();
+        }
         // Kích hoạt trạm phát AP để user vào cài đặt
         MyWiFi->setup();
         return true;
+    }
+    case WIFI_REGISTRATION_METHODS::SERIAL_INTERFACE:
+    {
+        return EnrollBySerial(); // Gọi hàm từ module mới
+    }
     }
     return false;
 }
