@@ -1,5 +1,5 @@
 #include <LittleFS.h>
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include "WifiManager.h"
 #include "WiFiSelfEnroll.h"     // Quản lý đăng kí tài khoản WiFi bằng self hosting
 #include "WiFiEnrollBySerial.h" // Quản lý đăng kí tài khoản WiFi bằng lệnh serial

@@ -1,18 +1,40 @@
+// Arduino core
+#include <Arduino.h>
+
+// Màn hình và I2C
 #include <U8g2lib.h>
 #include <Wire.h>
-#include <SoftwareSerial.h> // Bắt buộc phải có để dùng Serial trên D5/D6
+
 #include "ConfigManager.h"  // Cấu hình ghi bộ nhớ Flash
 #include "WifiManager.h"    // Quản lý wifi
 #include "OledBackdrop.h"   // Giao diện chào trên màn hình điện tử
 #include "ButtonGestures.h" // Quản lý các hình thái bấm của 1 nút button
 #include "MqttManager.h"    // Gửi dữ liệu lên MQTT mặc định mqtt.toolhub.app
 #include "main.h"           // Thông tin dev
+#include "RfidManager.h"   // Quản lý RFID 125kHz
 
-// --- CẤU HÌNH SOFTWARE SERIAL CHO SDS011 ---
-// Sử dụng D5 làm RX, D6 làm TX
-#define SDS_RX_PIN D5                             // GPIO14 -> Nối với SDS011 TX
-#define SDS_TX_PIN D6                             // GPIO12 -> Nối với SDS011 RX
-SoftwareSerial sdsSerial(SDS_RX_PIN, SDS_TX_PIN); // Khởi tạo cổng Serial mới
+// --- CẤU HÌNH CỔNG NỐI SDS011 ---
+// Trên ESP8266 dùng SoftwareSerial trên D5/D6.
+// Trên ESP32 dùng HardwareSerial (UART1) với chân cấu hình riêng.
+
+#if defined(ARDUINO_ARCH_ESP8266)
+  #include <SoftwareSerial.h>
+  // Sử dụng D5 làm RX, D6 làm TX (theo thiết kế board gốc)
+  #define SDS_RX_PIN D5                             // GPIO14 -> Nối với SDS011 TX
+  #define SDS_TX_PIN D6                             // GPIO12 -> Nối với SDS011 RX
+  SoftwareSerial sdsSerial(SDS_RX_PIN, SDS_TX_PIN); // Khởi tạo cổng Serial mới
+#elif defined(ARDUINO_ARCH_ESP32)
+  #include <HardwareSerial.h>
+  // Chọn chân UART cho SDS011 trên ESP32 (cần đấu dây tương ứng ngoài phần cứng)
+  #define SDS_RX_PIN 26   // GPIO26 -> Nối với SDS011 TX
+  #define SDS_TX_PIN 27   // GPIO27 -> Nối với SDS011 RX
+  HardwareSerial sdsSerial(1); // UART1 cho SDS011
+#endif
+
+#ifndef LED_BUILTIN
+  // Đa số board ESP32 dùng GPIO2 cho LED on-board
+  #define LED_BUILTIN 2
+#endif
 
 // --- CẤU HÌNH OLED (1.3" SH1106 I2C) ---
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
@@ -244,7 +266,7 @@ void setup()
 {
   // 1. Serial MẶC ĐỊNH (cho Debug/PC)
   Serial.begin(115200);
-  Serial.println("\nKhoi dong Wemos D1 Mini. Software Serial tren D5/D6.");
+  Serial.println("\nKhoi dong thiet bi quan trac bui min.");
 
   // 2. Lấy cấu hình từ Flash
   if (configMgr.begin())
@@ -259,8 +281,14 @@ void setup()
   // 4. Màn hinh chào
   showWelcomeScreen(u8g2);
 
-  // 5. Software Serial cho SDS011
+  // 5. Cổng Serial cho SDS011
+#if defined(ARDUINO_ARCH_ESP8266)
+  // Trên ESP8266: dùng SoftwareSerial trên D5/D6
   sdsSerial.begin(9600);
+#elif defined(ARDUINO_ARCH_ESP32)
+  // Trên ESP32: dùng HardwareSerial (UART1) với chân SDS_RX_PIN / SDS_TX_PIN
+  sdsSerial.begin(9600, SERIAL_8N1, SDS_RX_PIN, SDS_TX_PIN);
+#endif
 
   // 6. Led mặc định  LED_BUILTIN = D4
   pinMode(LED_BUILTIN, OUTPUT);
@@ -280,6 +308,9 @@ void setup()
     // Thiết lập MQTT
     mqttMgr.setup(); // Khởi tạo MQTT (set server, callback, topic)
   }
+
+  // Khởi tạo RFID 125kHz
+  rfid_init();
 
   delay(2000);
 }
@@ -467,6 +498,18 @@ void displayLevel()
 // --------------------------------------------------------
 // HÀM CHÍNH: loop()
 // --------------------------------------------------------
+void renderCurrentMode() {
+  if (g_mode == MODE_INFO) {
+    showFlashConfig(u8g2, (mqttMgr.isLastConnectionToBrokerOk() ? "MQTT Ok" : "MQTT dis"));
+  } else if (g_mode == MODE_IMMEDIATE) {
+    displayData();
+  } else if (g_mode == MODE_PLOT) {
+    plotData();
+  } else {
+    displayLevel();
+  }
+}
+
 void loop()
 {
 
@@ -486,6 +529,7 @@ void loop()
   {
     Serial.println("Bam nhanh: Chuyen Mode");
     g_mode = (g_mode + 1) % MODE_NUM;
+    renderCurrentMode();       // Vẽ lại ngay lập tức
   }
   else if (evt == DOUBLE_CLICK and g_mode == MODE_INFO)
   {
@@ -506,6 +550,19 @@ void loop()
     Serial.println("Giu 2s: Đăng kí WiFi");
     showAPConfig(u8g2);
     RegisterWiFi(WIFI_REGISTRATION_METHODS::SELF_STATION);
+  }
+
+  // Cập nhật dữ liệu từ module RFID
+  rfid_update();
+
+  // Nếu vừa đọc được thẻ RFID thì hiển thị lên Serial và OLED
+  if (rfid_has_new_tag()) {
+    String tag = rfid_get_last_tag();
+    Serial.print("[RFID] Tag: ");
+    Serial.println(tag);
+
+    // Hiển thị mã thẻ trên OLED
+    u8g2.print(tag.c_str());
   }
 
   // Đọc từ cổng Software Serial (sdsSerial)

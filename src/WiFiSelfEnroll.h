@@ -5,14 +5,19 @@
     #include <WiFi.h>
     #include <WebServer.h>              /// create webserver
 #elif  defined(ARDUINO_ARCH_ESP8266)
-    #include <ESP8266WiFi.h>
-    #include <ESP8266WebServer.h>       /// create webserver
+    #include <WiFi.h>
+    #include <WebServer.h>       /// create webserver
 #endif
 
+// /// @brief the default wifi SSID
+// #define SOICT_WIFI_SSID "SOICT_CORE_BOARD"
+// /// @brief the default wifi password
+// #define SOICT_WIFI_PASSWORD "12345678"
+
 /// @brief the default wifi SSID
-#define SOICT_WIFI_SSID "SOICT_CORE_BOARD"
+#define AP_WIFI_SSID "Esp32_AP"
 /// @brief the default wifi password
-#define SOICT_WIFI_PASSWORD "12345678"
+#define AP_WIFI_PASSWORD "12345678"
 
 /// @brief loop times try to reconnect to the AP before activating the station mode
 #define MAX_TRY_WIFI_ACCESS 15

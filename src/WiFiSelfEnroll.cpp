@@ -1,4 +1,9 @@
-#include "WiFiSelfEnroll.h"         
+#include "WiFiSelfEnroll.h"
+#include <Arduino.h>
+
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 2   // nếu board dùng GPIO2 cho LED on-board
+#endif
 
 /// @brief print more debug information to serial
 #define _DEBUG_
@@ -187,7 +192,7 @@ void WiFiSelfEnroll::SetupStation(const char * adhoc_ssid, const char * adhoc_pa
     IPAddress subnet(255,255,255,0);
 
     ///LED_BUILTIN is used for wifi indicator 
-    pinMode(LED_BUILTIN, OUTPUT);
+    // pinMode(LED_BUILTIN, OUTPUT);
 
     /// Indicator: start the wifi
     digitalWrite(LED_BUILTIN, HIGH);       
@@ -336,7 +341,7 @@ bool WiFiSelfEnroll::IsConfigOK(){
 
 /// @brief make sure WiFi ssid/password is correct. Otherwise, raise the Adhoc AP Station with ssid = SOICT_CORE_BOARD and password =  12345678
 void WiFiSelfEnroll::setup() {
-    WiFiSelfEnroll::setup(SOICT_WIFI_SSID, SOICT_WIFI_PASSWORD);
+    WiFiSelfEnroll::setup(AP_WIFI_SSID, AP_WIFI_PASSWORD);
 }
 
 /// @brief make sure WiFi ssid/password is correct. Otherwise, raise the Adhoc AP Station to enter the new config

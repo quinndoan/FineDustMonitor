@@ -45,24 +45,26 @@ bool MqttManager::setup() {
     sprintf(topicDown, MQTT_TOPIC_DOWN_TEMPLATE, configMgr.params.deviceID.c_str());
 
 
-    int retry = 0;
     Serial.println(F("Kiểm tra MQTT Broker duy nhất khi khởi động.."));
-    String mqttClientId = MQTT_CLIENT_ID_PREFIX + configMgr.params.deviceID;
-    while (!client.connected() && retry < 7) { // Thử kết nối tối đa 7 lần
-        lastReconnectAttemptStatus = client.connect(mqttClientId.c_str(), MQTT_USER, MQTT_PASS);
-        if (lastReconnectAttemptStatus) {
-            Serial.println(F("MQTT thành công!"));
-            client.subscribe(topicDown);
-            
-            // 3. GỌI HÀM STARTUP NGAY TẠI ĐÂY
-            sendStartupPacket(); 
-            return true;
-        } else {
-            Serial.print(".");
-            delay(1000);
-            retry++;
-        }
+
+    // Nếu WiFi chưa kết nối thì không cố gắng resolve DNS ngay,
+    // tránh spam lỗi hostByName() DNS Failed lúc khởi động.
+    if (!WiFi.isConnected()) {
+        Serial.println(F("[MQTT] WiFi chua san sang, se thu ket noi trong loop()."));
+        lastReconnectAttemptStatus = false;
+        return false;
     }
+
+    String mqttClientId = MQTT_CLIENT_ID_PREFIX + configMgr.params.deviceID;
+    lastReconnectAttemptStatus = client.connect(mqttClientId.c_str(), MQTT_USER, MQTT_PASS);
+    if (lastReconnectAttemptStatus) {
+        Serial.println(F("MQTT thanh cong!"));
+        client.subscribe(topicDown);
+        // Gửi gói Startup ngay khi kết nối thành công lần đầu
+        sendStartupPacket();
+        return true;
+    }
+
     return false;
 }
 

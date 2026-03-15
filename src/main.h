@@ -13,6 +13,6 @@
 extern bool wifiStatus; // Trạng thái kết nối: true = connected
 
 // --- NÚT BẤM -----
-#define CFG_BUTTON D7
+#define CFG_BUTTON 4
 
 #endif

@@ -4,10 +4,15 @@
 #include <Arduino.h>
 
 
-/// @brief the default wifi SSID
-#define WIFI_SSID_NAME "SOICT_CORE_BOARD"
-/// @brief the default wifi password
-#define WIFI_SSID_PASS "12345678"
+// /// @brief the default wifi SSID
+// #define WIFI_SSID_NAME "SOICT_CORE_BOARD"
+// /// @brief the default wifi password
+// #define WIFI_SSID_PASS "12345678"
+
+// wifi cho chế độ STA, gần như là không cần thiết vì đang đọc từ litlefs rồi
+#define WIFI_SSID_NAME "Quinn"
+// @brief the default wifi password
+#define WIFI_SSID_PASS "27032021"
 
 // Cấu hình thời gian kiểm tra WiFi (1 phút)
 #define WIFI_CHECK_INTERVAL 60000 
