@@ -18,4 +18,7 @@ void showFlashConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2, const char * more
 // Màn hình thông số AP
 void showAPConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2);
 
+// Màn hình thông số MQTT
+void showMqttConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2);
+
 #endif

@@ -33,11 +33,12 @@ ButtonGesture configBtn(CFG_BUTTON);
 
 // --- Biến toàn cục chứa mode hoạt động --
 // 0 = Home 1 = giá trị tức thời, 2 = đồ thị, 3 = kết luận
-#define MODE_INFO 0
-#define MODE_IMMEDIATE 1
-#define MODE_PLOT 2
-#define MODE_AQI 3
-#define MODE_NUM 4
+#define MODE_IMMEDIATE 0
+#define MODE_PLOT 1
+#define MODE_AQI 2
+#define MODE_INFO 3
+#define MODE_MQTT 4
+#define MODE_NUM 5
 char g_mode;
 
 
@@ -103,8 +104,8 @@ void setup()
   // 7. Nút bấm
   configBtn.begin();
 
-  // 8. Mode hoạt động đầu tiên
-  g_mode = MODE_INFO;
+  // 8. Mode hoạt động đầu tiên (vào thẳng trang đo đạc)
+  g_mode = MODE_IMMEDIATE;
 
   // 9. Bắt đầu khởi tạo internet
   if (configMgr.params.wifiEnabled) {
@@ -133,8 +134,10 @@ void renderCurrentMode() {
     displayData();
   } else if (g_mode == MODE_PLOT) {
     plotData();
-  } else {
+  } else if (g_mode == MODE_AQI) {
     displayLevel();
+  } else if (g_mode == MODE_MQTT) {
+    showMqttConfig(u8g2);
   }
 }
 

@@ -2,6 +2,7 @@
 #include "ConfigManager.h" // Lấy thông số cấu hình để hiển thị
 #include "WiFiManager.h"   // Chỉ nhằm để lấy SSID và password mặc định
 #include "main.h"		   // Import version
+#include <WiFi.h>          // Để lây thông tin địa chỉ IP
 
 // Logo bụi mịn (Chuyển đổi từ ảnh 50x50 của bạn)
 static const unsigned char logo_dust_50x50[] = {
@@ -122,7 +123,7 @@ void showFlashConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2, const char *moret
 	{
 		if (wifiStatus)
 		{
-			u8g2.print("okay [V]");
+			u8g2.print(WiFi.localIP().toString());
 		}
 		else
 		{
@@ -161,6 +162,29 @@ void showAPConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2)
 	// Hiển thị IP
 	u8g2.setCursor(0, 55);
 	u8g2.print("IP: 192.168.15.1");
+
+	u8g2.sendBuffer();
+}
+
+void showMqttConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2)
+{
+	u8g2.clearBuffer();
+
+	// Tiêu đề
+	u8g2.setFont(u8g2_font_6x12_tr);
+	u8g2.setCursor(0, 10);
+	u8g2.print("--- MQTT Service ---");
+
+	int y = 25;
+	// Tạo chuỗi Upstream / Downstream
+	String tUp = String("dust_v2/") + configMgr.params.deviceID + "/data";
+	String tDown = String("dust_v2/") + configMgr.params.deviceID + "/cmd";
+
+	// Hiển thị Topic Up
+	drawSmartText(u8g2, 0, y, "Up: ", tUp);
+
+	// Hiển thị Topic Down
+	drawSmartText(u8g2, 0, y, "Dn: ", tDown);
 
 	u8g2.sendBuffer();
 }
