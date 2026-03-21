@@ -196,5 +196,37 @@ void loop()
     u8g2.print(tag.c_str());
   }
 
+  // --- BƯỚC 1: GIẢ LẬP ĐỌC QR CODE TỪ SERIAL (Mục 1) ---
+  if (Serial.available() > 0) {
+    String qr_url = Serial.readStringUntil('\n');
+    qr_url.trim(); // Loại bỏ khoảng trắng hoặc ký tự \r dư thừa ở cuối
+
+    if (qr_url.length() > 0) {
+      Serial.print("\n[QR_SIMULATION] Quet thanh cong URL: ");
+      Serial.println(qr_url);
+
+      // Hiển thị sự kiện quét mã lên OLED trong 2 giây rồi trả lại màn hình chính
+      u8g2.clearBuffer();
+      u8g2.setFont(u8g2_font_7x13_mf);
+      u8g2.drawStr(5, 20, "QR Code Scanned:");
+      
+      // Dùng font nhỏ để in chuỗi URL đè xuống dưới
+      u8g2.setFont(u8g2_font_5x7_tr);
+      u8g2.setCursor(5, 40);
+      u8g2.print(qr_url.substring(0, 24)); // Hiển thị tạm 24 kí tự đầu
+      
+      if (qr_url.length() > 24) {
+        u8g2.setCursor(5, 52);
+        u8g2.print(qr_url.substring(24, 48)); // Cắt in tiếp dòng thứ 2
+      }
+      u8g2.sendBuffer();
+
+      // Giữ màn hình báo nhận thẻ trong 2s
+      delay(2000);
+      
+      // Khôi phục lại giao diện màn hình theo g_mode hiện tại
+      renderCurrentMode();
+    }
+  }
 
 }
