@@ -98,8 +98,16 @@ void showFlashConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2, const char *moret
 	// Hiển thị SSID
 	drawSmartText(u8g2, 0, y, "SSID: ", configMgr.params.ssid);
 
-	// Hiển thị Device ID
-	drawSmartText(u8g2, 0, y, "Pass: ", configMgr.params.password);
+	// Hiển thị Device ID (Masked Password)
+	String maskedPass = "****";
+	if (configMgr.params.password.length() > 2) {
+		maskedPass += configMgr.params.password.substring(configMgr.params.password.length() - 2);
+	} else if (configMgr.params.password.length() > 0) {
+		maskedPass += configMgr.params.password;
+	} else {
+		maskedPass = ""; // Empty password
+	}
+	drawSmartText(u8g2, 0, y, "Pass: ", maskedPass);
 
 	// --- HIỂN THỊ TRẠNG THÁI WIFI ---
 	u8g2.setCursor(0, y);
