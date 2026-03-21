@@ -233,7 +233,7 @@
     const CONFIG = {
         host: 'mqtt.toolhub.app', port: 8084, path: '/mqtt',
         user: 'demo', pass: 'demo',
-        subscribeTopic: 'dust_v2/tiennd/data'
+        subscribeTopic: 'monitor_student/tiennd/data'
     };
 
     // --- CHART SETUP ---
@@ -426,7 +426,7 @@
     function sendReboot() {
         if (!activeDeviceId) return;
         const msg = new Paho.MQTT.Message("reboot");
-        msg.destinationName = `dust_v2/${activeDeviceId}/cmd`;
+        msg.destinationName = `monitor_student/${activeDeviceId}/cmd`;
         client.send(msg);
         const fb = document.getElementById('command-feedback');
         fb.classList.remove('d-none'); fb.innerText = "Đã gửi Reboot!";

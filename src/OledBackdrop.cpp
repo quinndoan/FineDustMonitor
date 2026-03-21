@@ -190,8 +190,8 @@ void showMqttConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2)
 
 	int y = 25;
 	// Tạo chuỗi Upstream / Downstream
-	String tUp = String("dust_v2/") + configMgr.params.deviceID + "/data";
-	String tDown = String("dust_v2/") + configMgr.params.deviceID + "/cmd";
+	String tUp = String("monitor_student/") + configMgr.params.deviceID + "/data";
+	String tDown = String("monitor_student/") + configMgr.params.deviceID + "/cmd";
 
 	// Hiển thị Topic Up
 	drawSmartText(u8g2, 0, y, "Up: ", tUp);

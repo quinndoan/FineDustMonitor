@@ -200,6 +200,10 @@ void loop()
 
     // Hiển thị mã thẻ trên OLED
     u8g2.print(tag.c_str());
+
+    // Gửi data lên MQTT Server (Bước 3)
+    String jsonPayload = "{\"rfid\":\"" + tag + "\"}";
+    mqttMgr.publishString(jsonPayload);
   }
 
   // --- BƯỚC 1: GIẢ LẬP ĐỌC QR CODE TỪ SERIAL (Mục 1) ---
@@ -232,6 +236,10 @@ void loop()
       // Giữ màn hình báo nhận thẻ trong 2s
       delay(2000);
       
+      // Gửi data URL lên MQTT Server (Gộp chung logic Bước 3)
+      String jsonPayload = "{\"qr\":\"" + qr_url + "\"}";
+      mqttMgr.publishString(jsonPayload);
+
       // Khôi phục lại giao diện màn hình theo g_mode hiện tại
       renderCurrentMode();
     }

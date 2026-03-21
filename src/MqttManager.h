@@ -14,10 +14,10 @@
 // --- CẤU HÌNH TOPIC (Sử dụng DeviceID để cá nhân hóa) ---
 // Upstream: Thiết bị -> Server (Gửi dữ liệu)
 // Downstream: Server -> Thiết bị (Nhận lệnh)
-#define MQTT_TOPIC_UP_TEMPLATE "dust_v2/%s/data"
-#define MQTT_TOPIC_DOWN_TEMPLATE "dust_v2/%s/cmd"
+#define MQTT_TOPIC_UP_TEMPLATE "monitor_student/%s/data"
+#define MQTT_TOPIC_DOWN_TEMPLATE "monitor_student/%s/cmd"
 #define MQTT_TOPIC_STARTUP "startup" // Topic chung cho mọi thiết bị báo danh
-#define MQTT_CLIENT_ID_PREFIX "dust_v2-" // Công thức tạo mqtt client id = MQTT_CLIENT_ID_PREFIX + <deviceid> 
+#define MQTT_CLIENT_ID_PREFIX "monitor_student-" // Công thức tạo mqtt client id = MQTT_CLIENT_ID_PREFIX + <deviceid> 
 
 class MqttManager
 {
@@ -67,6 +67,9 @@ public:
     // Hàm gốc điều phối gửi tin
     bool publish(const uint8_t *payload, size_t length, bool retained = true);
     bool publish(const char *topic, const uint8_t *payload, size_t length, bool retained = true);
+
+    // --- BIẾN THỂ CHUỖI VĂN BẢN (JSON / String) ---
+    bool publishString(String payload, bool retained = false);
 
     // --- BIẾN THỂ TEXT (CSV) ---
     void publishText(float v1);

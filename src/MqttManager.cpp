@@ -103,7 +103,7 @@ void MqttManager::loop() {
             
             lastReconnectAttemptStatus = client.connect(mqttClientId.c_str(), MQTT_USER, MQTT_PASS);
             if (lastReconnectAttemptStatus) {
-                Serial.println("[MQTT] Đã kết nối thành công!");
+                Serial.println("[MQTT] MQTT connected!");
                 client.subscribe(topicDown); // Đăng ký nhận lệnh
             }
         }
@@ -119,6 +119,11 @@ void MqttManager::loop() {
 bool MqttManager::publish(const uint8_t* payload, size_t length, bool retained) {
     if (!client.connected()) return false;
     return client.publish(topicUp, payload, length, retained);
+}
+
+bool MqttManager::publishString(String payload, bool retained) {
+    if (!client.connected()) return false;
+    return client.publish(topicUp, (const uint8_t*)payload.c_str(), payload.length(), retained);
 }
 
 // ======================== NHÓM HÀM TEXT (CSV) ========================

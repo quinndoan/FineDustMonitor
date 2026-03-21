@@ -254,20 +254,20 @@ graph TD
 - Protocol: mqtt
 - User: demo
 - Password: demo
-- MQTT ClientID: __dust_v2-deviceid__  (Thay đổi bằng macro __MQTT_CLIENT_ID_PREFIX__)
+- MQTT ClientID: __monitor_student-deviceid__  (Thay đổi bằng macro __MQTT_CLIENT_ID_PREFIX__)
 - Topic __startup__ : write  (Thay đổi bằng macro __MQTT_TOPIC_STARTUP__)
 
   ```csv
     deviceid,ssid,mac,topic write,topic read
   ```
 
-- Topic __dust_v2/deviceid/data__ : write với nội dung dạng (Thay đổi bằng macro __MQTT_TOPIC_UP_TEMPLATE__)
+- Topic __monitor_student/deviceid/data__ : write với nội dung dạng (Thay đổi bằng macro __MQTT_TOPIC_UP_TEMPLATE__)
 
   ```csv
     pm2.5 ug/m3,pm2.5 AQI,pm10 ug/m3,pm10 AQI
   ```
 
-- Topic __dust_v2/deviceid/cmd__ : read  (Thay đổi bằng macro __MQTT_TOPIC_DOWN_TEMPLATE__)
+- Topic __monitor_student/deviceid/cmd__ : read  (Thay đổi bằng macro __MQTT_TOPIC_DOWN_TEMPLATE__)
   - Lệnh khởi động lại thiết bị
 
     ```csv
