@@ -12,6 +12,7 @@
 #include "MqttManager.h"    // Gửi dữ liệu lên MQTT mặc định mqtt.toolhub.app
 #include "main.h"           // Thông tin dev
 #include "RfidManager.h"   // Quản lý RFID 125kHz
+#include "BuzzerManager.h" // Quản lý Loa Buzzer
 
 // --- KHÔNG CÒN SỬ DỤNG MODULE BỤI SDS011 ---
 
@@ -104,7 +105,11 @@ void setup()
   // 7. Nút bấm
   configBtn.begin();
 
-  // 8. Mode hoạt động đầu tiên (vào thẳng trang đo đạc)
+  // 8. Khởi tạo còi Buzzer
+  buzzerMgr.begin();
+  buzzerMgr.beepShort(); // Còi bíp 1 tiếng báo hiệu boot xong
+
+  // 9. Mode hoạt động đầu tiên (vào thẳng trang đo đạc)
   g_mode = MODE_IMMEDIATE;
 
   // 9. Bắt đầu khởi tạo internet
@@ -188,6 +193,7 @@ void loop()
 
   // Nếu vừa đọc được thẻ RFID thì hiển thị lên Serial và OLED
   if (rfid_has_new_tag()) {
+    buzzerMgr.beepShort(); // Tít nhanh 1 phát ăn ngay cảm giác quẹt
     String tag = rfid_get_last_tag();
     Serial.print("[RFID] Tag: ");
     Serial.println(tag);
@@ -202,6 +208,8 @@ void loop()
     qr_url.trim(); // Loại bỏ khoảng trắng hoặc ký tự \r dư thừa ở cuối
 
     if (qr_url.length() > 0) {
+      buzzerMgr.beepOk(); // Kêu dài để mô phỏng qr nhận
+      
       Serial.print("\n[QR_SIMULATION] Quet thanh cong URL: ");
       Serial.println(qr_url);
 
