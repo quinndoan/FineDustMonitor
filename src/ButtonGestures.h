@@ -3,6 +3,9 @@
 
 #include <Arduino.h>
 
+// --- NÚT BẤM -----
+#define CFG_BUTTON 4
+
 enum ButtonEvent {
     NONE,
     SHORT_PRESS,

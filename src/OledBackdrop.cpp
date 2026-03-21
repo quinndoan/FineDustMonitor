@@ -1,8 +1,9 @@
 #include "OledBackdrop.h"
 #include "ConfigManager.h" // Lấy thông số cấu hình để hiển thị
-#include "WiFiManager.h"   // Chỉ nhằm để lấy SSID và password mặc định
+// WiFiManager header removed as it is no longer used directly
 #include "main.h"		   // Import version
 #include <WiFi.h>          // Để lây thông tin địa chỉ IP
+#include "WiFiSelfEnroll.h"// Lấy cấu hình AP mặc định
 
 // Logo bụi mịn (Chuyển đổi từ ảnh 50x50 của bạn)
 static const unsigned char logo_dust_50x50[] = {
@@ -151,14 +152,26 @@ void showAPConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2)
 	u8g2.setCursor(0, 10);
 	u8g2.print("--- Access Point ---");
 
-	// Hiển thị SSID
+	// Hiển thị SSID AP
 	u8g2.setCursor(0, 25);
 	u8g2.print("AP:");
-	u8g2.print(WIFI_SSID_NAME);
-	// Hiển thị SSID
+	u8g2.print(AP_WIFI_SSID);
+
+	// Mask AP password
+	String apPass = "****";
+	String rawPass = String(AP_WIFI_PASSWORD);
+	if (rawPass.length() > 2) {
+		apPass += rawPass.substring(rawPass.length() - 2);
+	} else if (rawPass.length() > 0) {
+		apPass += rawPass;
+	} else {
+		apPass = "";
+	}
+
+	// Hiển thị Pass
 	u8g2.setCursor(0, 40);
 	u8g2.print("P:");
-	u8g2.print(WIFI_SSID_PASS);
+	u8g2.print(apPass);
 	// Hiển thị IP
 	u8g2.setCursor(0, 55);
 	u8g2.print("IP: 192.168.15.1");
