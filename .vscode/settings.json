@@ -1,0 +1,8 @@
+{
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "clangd.arguments": [
+    "--log=verbose",
+    "--compile-commands-dir=${workspaceFolder}",
+    "--query-driver=**/*"
+  ]
+}

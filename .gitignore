@@ -4,3 +4,8 @@
 .vscode/launch.json
 .vscode/ipch
 logs/xvba_debug.log
+
+# Clangd and C/C++ Tools Cache
+compile_commands.json
+.cache/
+.clangd

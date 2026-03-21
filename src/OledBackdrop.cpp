@@ -42,14 +42,16 @@ void showWelcomeScreen(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2)
 
 	// 3. PHẦN CHỮ BÊN PHẢI
 	u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
-	u8g2.drawUTF8(55, 30, "Đo Bụi");
+	// Vì "Kiểm soát thí sinh" quá dài và không có font tiếng Việt U8G2 nào nhỏ hơn 16px, ta nên chia làm 2 dòng
+	u8g2.drawUTF8(55, 26, "Kiểm soát");
+	u8g2.drawUTF8(55, 41, "thí sinh");
 
-	u8g2.setFont(u8g2_font_7x13_mf);
-	u8g2.drawStr(55, 45, "PM2.5 PM10");
+	u8g2.setFont(u8g2_font_5x7_tr);
+	u8g2.drawStr(55, 53, "RFID, QR");
 
 	// Sử dụng hằng số từ main.h
 	u8g2.setFont(u8g2_font_5x7_tr);
-	u8g2.setCursor(55, 60);
+	u8g2.setCursor(55, 62);
 	u8g2.print("Ver: ");
 	u8g2.print(FIRMWARE_VERSION); // Gọi từ main.h
 
