@@ -14,6 +14,7 @@
 #include "RfidManager.h"   // Quản lý RFID 125kHz
 #include "BuzzerManager.h" // Quản lý Loa Buzzer
 #include "ApiManager.h"    // Request HTTPS kiểm tra MSSV với Google Sheet
+#include "NfcManager.h"    // Quản lý MFRC522 13.56MHz
 
 // --- KHÔNG CÒN SỬ DỤNG MODULE BỤI SDS011 ---
 
@@ -125,6 +126,9 @@ void setup()
   // Khởi tạo RFID 125kHz
   rfid_init();
 
+  // Khởi tạo module NFC 13.56MHz (MFRC522)
+  nfc_init();
+
   delay(2000);
 }
 
@@ -145,6 +149,50 @@ void renderCurrentMode() {
   } else if (g_mode == MODE_MQTT) {
     showMqttConfig(u8g2);
   }
+}
+
+void handleCardCheck(String tag, const char* logPrefix) {
+    buzzerMgr.beepShort(); // Bíp ngắn chạm thẻ cực nhạy
+    
+    Serial.print(logPrefix);
+    Serial.print(" Tag UID: ");
+    Serial.println(tag);
+
+    // Gửi chung gói dữ liệu về server qua trường "rfid".
+    // Bạn có thể đổi JSON thành {"nfc":...} nếu muốn phân biệt với 125KHz ở sheet
+    String jsonPayload = "{\"rfid\":\"" + tag + "\"}";
+    mqttMgr.publishString(jsonPayload);
+
+    // --- BƯỚC 4: GỌI API KIỂM TRA HỢP LỆ VÀ XUẤT LÊN MÀN HÌNH ---
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
+    u8g2.drawUTF8(5, 20, "Đang xử lý...");
+    u8g2.sendBuffer();
+    
+    // Yêu cầu API quét (mất ~1-2s)
+    String studentName = apiMgr.verifyStudent(tag, true);
+    
+    u8g2.clearBuffer();
+    if(studentName != "") {
+        // HỢP LỆ
+        u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
+        u8g2.drawUTF8(5, 20, "Vào cửa: OK");
+        u8g2.setFont(u8g2_font_6x12_tr); 
+        u8g2.drawUTF8(5, 40, studentName.c_str());
+        u8g2.sendBuffer();
+        
+        buzzerMgr.beepOk(); // Bíp dài
+    } else {
+        // TỪ CHỐI
+        u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
+        u8g2.drawUTF8(20, 35, "[X] TỪ CHỐI");
+        u8g2.sendBuffer();
+        
+        buzzerMgr.beepError(); // Bíp, bíp, bíp (lỗi)
+    }
+
+    delay(2000);
+    renderCurrentMode(); // Phục hồi trang cũ
 }
 
 void loop()
@@ -189,50 +237,20 @@ void loop()
     RegisterWiFi(WIFI_REGISTRATION_METHODS::SELF_STATION);
   }
 
-  // Cập nhật dữ liệu từ module RFID
+  // Cập nhật dữ liệu từ module RFID 125kHz
   rfid_update();
 
-  // Nếu vừa đọc được thẻ RFID thì hiển thị lên Serial và OLED
+  // Cập nhật dữ liệu từ module MFRC522 13.56MHz
+  nfc_update();
+
+  // Nếu vừa đọc được thẻ RFID
   if (rfid_has_new_tag()) {
-    buzzerMgr.beepShort(); // Tít nhanh 1 phát ăn ngay cảm giác quẹt
-    String tag = rfid_get_last_tag();
-    Serial.print("[RFID] Tag: ");
-    Serial.println(tag);
+    handleCardCheck(rfid_get_last_tag(), "[RFID/125kHz]");
+  }
 
-    // Gửi data lên MQTT Server (Bước 3)
-    String jsonPayload = "{\"rfid\":\"" + tag + "\"}";
-    mqttMgr.publishString(jsonPayload);
-
-    // --- BƯỚC 4: GỌI API KIỂM TRA HỢP LỆ VÀ XUẤT LÊN MÀN HÌNH ---
-    u8g2.clearBuffer();
-    u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
-    u8g2.drawUTF8(5, 20, "Đang xử lý...");
-    u8g2.sendBuffer();
-    
-    // Yêu cầu API quét (mất ~1-2s)
-    String studentName = apiMgr.verifyStudent(tag, true);
-    
-    u8g2.clearBuffer();
-    if(studentName != "") {
-        // HỢP LỆ
-        u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
-        u8g2.drawUTF8(5, 20, "Vào cửa: OK");
-        u8g2.setFont(u8g2_font_6x12_tr); 
-        u8g2.drawUTF8(5, 40, studentName.c_str());
-        u8g2.sendBuffer();
-        
-        buzzerMgr.beepOk(); // Bíp dài
-    } else {
-        // TỪ CHỐI
-        u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
-        u8g2.drawUTF8(20, 35, "[X] TỪ CHỐI");
-        u8g2.sendBuffer();
-        
-        buzzerMgr.beepError(); // Bíp, bíp, bíp (lỗi)
-    }
-
-    delay(2000);
-    renderCurrentMode(); // Phục hồi trang cũ
+  // Nếu vừa đọc được thẻ NFC (Mifare)
+  if (nfc_has_new_tag()) {
+    handleCardCheck(nfc_get_last_tag(), "[NFC/MFRC522]");
   }
 
   // --- BƯỚC 1: GIẢ LẬP ĐỌC QR CODE TỪ SERIAL (Mục 1) ---
