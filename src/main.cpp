@@ -13,6 +13,7 @@
 #include "main.h"           // Thông tin dev
 #include "RfidManager.h"   // Quản lý RFID 125kHz
 #include "BuzzerManager.h" // Quản lý Loa Buzzer
+#include "ApiManager.h"    // Request HTTPS kiểm tra MSSV với Google Sheet
 
 // --- KHÔNG CÒN SỬ DỤNG MODULE BỤI SDS011 ---
 
@@ -198,12 +199,40 @@ void loop()
     Serial.print("[RFID] Tag: ");
     Serial.println(tag);
 
-    // Hiển thị mã thẻ trên OLED
-    u8g2.print(tag.c_str());
-
     // Gửi data lên MQTT Server (Bước 3)
     String jsonPayload = "{\"rfid\":\"" + tag + "\"}";
     mqttMgr.publishString(jsonPayload);
+
+    // --- BƯỚC 4: GỌI API KIỂM TRA HỢP LỆ VÀ XUẤT LÊN MÀN HÌNH ---
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
+    u8g2.drawUTF8(5, 20, "Đang xử lý...");
+    u8g2.sendBuffer();
+    
+    // Yêu cầu API quét (mất ~1-2s)
+    String studentName = apiMgr.verifyStudent(tag, true);
+    
+    u8g2.clearBuffer();
+    if(studentName != "") {
+        // HỢP LỆ
+        u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
+        u8g2.drawUTF8(5, 20, "Vào cửa: OK");
+        u8g2.setFont(u8g2_font_6x12_tr); 
+        u8g2.drawUTF8(5, 40, studentName.c_str());
+        u8g2.sendBuffer();
+        
+        buzzerMgr.beepOk(); // Bíp dài
+    } else {
+        // TỪ CHỐI
+        u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
+        u8g2.drawUTF8(20, 35, "[X] TỪ CHỐI");
+        u8g2.sendBuffer();
+        
+        buzzerMgr.beepError(); // Bíp, bíp, bíp (lỗi)
+    }
+
+    delay(2000);
+    renderCurrentMode(); // Phục hồi trang cũ
   }
 
   // --- BƯỚC 1: GIẢ LẬP ĐỌC QR CODE TỪ SERIAL (Mục 1) ---
@@ -217,30 +246,36 @@ void loop()
       Serial.print("\n[QR_SIMULATION] Quet thanh cong URL: ");
       Serial.println(qr_url);
 
-      // Hiển thị sự kiện quét mã lên OLED trong 2 giây rồi trả lại màn hình chính
-      u8g2.clearBuffer();
-      u8g2.setFont(u8g2_font_7x13_mf);
-      u8g2.drawStr(5, 20, "QR Code Scanned:");
-      
-      // Dùng font nhỏ để in chuỗi URL đè xuống dưới
-      u8g2.setFont(u8g2_font_5x7_tr);
-      u8g2.setCursor(5, 40);
-      u8g2.print(qr_url.substring(0, 24)); // Hiển thị tạm 24 kí tự đầu
-      
-      if (qr_url.length() > 24) {
-        u8g2.setCursor(5, 52);
-        u8g2.print(qr_url.substring(24, 48)); // Cắt in tiếp dòng thứ 2
-      }
-      u8g2.sendBuffer();
-
-      // Giữ màn hình báo nhận thẻ trong 2s
-      delay(2000);
-      
       // Gửi data URL lên MQTT Server (Gộp chung logic Bước 3)
       String jsonPayload = "{\"qr\":\"" + qr_url + "\"}";
       mqttMgr.publishString(jsonPayload);
 
-      // Khôi phục lại giao diện màn hình theo g_mode hiện tại
+      // --- BƯỚC 4: GỌI API BẰNG LINK QR VỪA QUÉT THAY VÌ MÃ THẺ ---
+      u8g2.clearBuffer();
+      u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
+      u8g2.drawUTF8(5, 20, "Tra cứu Server");
+      u8g2.sendBuffer();
+      
+      String studentName = apiMgr.verifyStudent(qr_url, false);
+      
+      u8g2.clearBuffer();
+      if(studentName != "") {
+          u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
+          u8g2.drawUTF8(5, 20, "Vào cửa: OK");
+          u8g2.setFont(u8g2_font_6x12_tr); 
+          u8g2.drawUTF8(5, 40, studentName.c_str());
+          u8g2.sendBuffer();
+          buzzerMgr.beepOk();
+      } else {
+          u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
+          u8g2.drawUTF8(20, 35, "[X] LỖI QR");
+          u8g2.sendBuffer();
+          buzzerMgr.beepError();
+      }
+
+      // Giữ màn hình báo nhận thẻ trong 2.5s rồi hồi phục
+      delay(2500);
+      
       renderCurrentMode();
     }
   }
