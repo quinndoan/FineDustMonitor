@@ -1,4 +1,4 @@
-#include "RfidManager.h"
+#include "Rfid125khzManager.h"
 
 // Sử dụng Serial2 cho module RFID 125kHz
 // Nhiều module 125kHz (VD: RDM6300) gửi chuỗi ASCII kết thúc bằng \r hoặc \n
@@ -6,6 +6,7 @@
 static String rfidBuffer;
 static bool rfidTagReady = false;
 static bool rfidInFrame = false;
+static unsigned long lastTagTime = 0;
 
 static void finishTagIfValid() {
   if (rfidBuffer.length() > 0) {
@@ -20,6 +21,16 @@ void rfid_init() {
 }
 
 void rfid_update() {
+  // Bỏ qua tín hiệu mới nếu chưa đủ 2 giây kể từ lần nhận thẻ trước đó
+  if (lastTagTime > 0 && (millis() - lastTagTime < 2000)) {
+    while (Serial2.available() > 0) {
+      Serial2.read(); // Xóa bộ đệm
+    }
+    rfidInFrame = false;
+    rfidBuffer = "";
+    return;
+  }
+
   while (Serial2.available() > 0) {
     char c = (char)Serial2.read();
 
@@ -64,5 +75,7 @@ String rfid_get_last_tag() {
   String tag = rfidBuffer;
   rfidBuffer = "";
   rfidTagReady = false;
+  lastTagTime = millis();
+  if (lastTagTime == 0) lastTagTime = 1; // Đảm bảo khác 0
   return tag;
 }

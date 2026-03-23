@@ -11,7 +11,7 @@
 #include "ButtonGestures.h" // Quản lý các hình thái bấm của 1 nút button
 #include "MqttManager.h"    // Gửi dữ liệu lên MQTT mặc định mqtt.toolhub.app
 #include "main.h"           // Thông tin dev
-#include "RfidManager.h"   // Quản lý RFID 125kHz
+#include "Rfid125khzManager.h"   // Quản lý RFID 125kHz
 #include "BuzzerManager.h" // Quản lý Loa Buzzer
 #include "ApiManager.h"    // Request HTTPS kiểm tra MSSV với Google Sheet
 #include "NfcManager.h"    // Quản lý MFRC522 13.56MHz
@@ -177,8 +177,10 @@ void handleCardCheck(String tag, const char* logPrefix) {
         // HỢP LỆ
         u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
         u8g2.drawUTF8(5, 20, "Vào cửa: OK");
-        u8g2.setFont(u8g2_font_6x12_tr); 
-        u8g2.drawUTF8(5, 40, studentName.c_str());
+        
+        // Vẽ tên tiếng Việt có dấu to rõ với tính năng chia dòng
+        drawVietnameseName(u8g2,studentName);
+        
         u8g2.sendBuffer();
         
         buzzerMgr.beepOk(); // Bíp dài
@@ -232,7 +234,7 @@ void loop()
   }
   else if (evt == LONG_PRESS_2S)
   {
-    Serial.println("Giu 2s: Đăng kí WiFi");
+    Serial.println("Giữ 2s: Đăng kí WiFi");
     showAPConfig(u8g2);
     RegisterWiFi(WIFI_REGISTRATION_METHODS::SELF_STATION);
   }
@@ -280,8 +282,10 @@ void loop()
       if(studentName != "") {
           u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
           u8g2.drawUTF8(5, 20, "Vào cửa: OK");
-          u8g2.setFont(u8g2_font_6x12_tr); 
-          u8g2.drawUTF8(5, 40, studentName.c_str());
+          
+          // Vẽ tên tiếng Việt hiển thị đủ dấu
+          drawVietnameseName(u8g2,studentName);
+          
           u8g2.sendBuffer();
           buzzerMgr.beepOk();
       } else {

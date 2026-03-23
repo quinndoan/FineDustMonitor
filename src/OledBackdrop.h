@@ -21,4 +21,7 @@ void showAPConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2);
 // Màn hình thông số MQTT
 void showMqttConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2);
 
+// Hàm hỗ trợ tự động cắt tên Tiếng Việt (có dấu) thành 2 dòng chữ to nếu quá dài
+void drawVietnameseName(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2,String studentName);
+
 #endif
