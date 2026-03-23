@@ -203,8 +203,8 @@ void handleCardCheck(String tag, const char* logPrefix) {
     renderCurrentMode(); // Phục hồi trang cũ
     
     // Xóa bộ đệm và reset cooldown của các module tránh bị bắt trùng thẻ cũ lưu trong RX
-    rfid_clear_rx();
-    nfc_clear_rx();
+    // rfid_clear_rx();
+    // nfc_clear_rx();
 }
 
 void loop()
@@ -346,8 +346,8 @@ void loop()
       renderCurrentMode();
       
       // Reset cooldown các module tránh dội thẻ
-      rfid_clear_rx();
-      nfc_clear_rx();
+      // rfid_clear_rx();
+      // nfc_clear_rx();
     }
   }
 
