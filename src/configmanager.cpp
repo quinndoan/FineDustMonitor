@@ -34,6 +34,9 @@ void ConfigManager::loadAll() {
     readFile(FILE_WIFI_ENABLE, temp);
     // Nếu file trống (mới format), mặc định là "1" (bật)
     params.wifiEnabled = (temp != "0"); 
+    
+    readFile(FILE_MQTT_ENABLE, temp);
+    params.mqttEnabled = (temp != "0"); 
 }
 
 void ConfigManager::saveAll() {
@@ -41,6 +44,7 @@ void ConfigManager::saveAll() {
     writeFile(FILE_WIFI_PASS, params.password);
     writeFile(FILE_DEVICE_ID, params.deviceID);
     writeFile(FILE_WIFI_ENABLE, params.wifiEnabled ? "1" : "0");
+    writeFile(FILE_MQTT_ENABLE, params.mqttEnabled ? "1" : "0");
 }
 
 void ConfigManager::setWifiEnabled(bool enabled) {

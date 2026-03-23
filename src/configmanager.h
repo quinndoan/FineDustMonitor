@@ -9,12 +9,14 @@
 #define FILE_WIFI_PASS    "/password.txt"
 #define FILE_DEVICE_ID    "/deviceid.txt"
 #define FILE_WIFI_ENABLE  "/enabled.txt"
+#define FILE_MQTT_ENABLE  "/mqtt_enabled.txt"
 
 struct PersistentParams {
     String ssid;
     String password;
     String deviceID;
     bool wifiEnabled;
+    bool mqttEnabled;
 };
 
 class ConfigManager {

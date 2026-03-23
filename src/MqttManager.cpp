@@ -91,6 +91,13 @@ void MqttManager::callback(char* topic, byte* payload, unsigned int length) {
 }
 
 void MqttManager::loop() {
+    if (!configMgr.params.mqttEnabled) {
+        if (client.connected()) {
+            client.disconnect();
+            lastReconnectAttemptStatus = false;
+        }
+        return;
+    }
     if (!WiFi.isConnected()) return; // Chỉ chạy khi có WiFi
 
     if (!client.connected()) {
@@ -117,12 +124,12 @@ void MqttManager::loop() {
  * HÀM GỐC: Chấp nhận cả chuỗi char* và mảng byte uint8_t*
  */
 bool MqttManager::publish(const uint8_t* payload, size_t length, bool retained) {
-    if (!client.connected()) return false;
+    if (!configMgr.params.mqttEnabled || !client.connected()) return false;
     return client.publish(topicUp, payload, length, retained);
 }
 
 bool MqttManager::publishString(String payload, bool retained) {
-    if (!client.connected()) return false;
+    if (!configMgr.params.mqttEnabled || !client.connected()) return false;
     return client.publish(topicUp, (const uint8_t*)payload.c_str(), payload.length(), retained);
 }
 

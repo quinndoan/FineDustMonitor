@@ -1,255 +1,266 @@
 #include "OledBackdrop.h"
 #include "ConfigManager.h" // Lấy thông số cấu hình để hiển thị
 // WiFiManager header removed as it is no longer used directly
-#include "main.h"		   // Import version
-#include <WiFi.h>          // Để lây thông tin địa chỉ IP
-#include "WiFiSelfEnroll.h"// Lấy cấu hình AP mặc định
+#include "WiFiSelfEnroll.h" // Lấy cấu hình AP mặc định
+#include "main.h"           // Import version
+#include <WiFi.h>           // Để lây thông tin địa chỉ IP
+
 
 // Logo bụi mịn (Chuyển đổi từ ảnh 50x50 của bạn)
 static const unsigned char logo_dust_50x50[] = {
-	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xc0, 0xff, 0xff,
-	0xff, 0xff, 0xff, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xdf, 0xff, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xff,
-	0xff, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-	0xc0, 0xff, 0xdf, 0xff, 0xff, 0xff, 0xff, 0xc0, 0xff, 0xdf, 0xff, 0xff, 0xff, 0xff, 0xc0, 0xff,
-	0xff, 0xff, 0xc1, 0xff, 0xff, 0xc0, 0xff, 0xff, 0xff, 0x18, 0xff, 0xff, 0xc0, 0xff, 0xff, 0xc6,
-	0x7f, 0x7f, 0x7f, 0xc0, 0xff, 0xff, 0x00, 0xff, 0xbf, 0x7f, 0xc0, 0xff, 0xff, 0x7c, 0xff, 0xdf,
-	0xff, 0xc0, 0xff, 0xfe, 0xfe, 0xfb, 0xdf, 0xff, 0xc0, 0xff, 0xfe, 0xfe, 0xfb, 0xef, 0xff, 0xc0,
-	0xff, 0xfe, 0xff, 0x7f, 0xef, 0xff, 0xc0, 0xff, 0xf8, 0xff, 0xff, 0xef, 0xff, 0xc0, 0xfe, 0xe3,
-	0xff, 0xff, 0xe3, 0xff, 0xc0, 0xff, 0xcf, 0xff, 0xff, 0x9d, 0xff, 0xc0, 0xff, 0xdf, 0xff, 0xff,
-	0xbe, 0xff, 0xc0, 0xff, 0xbf, 0xff, 0xff, 0xfe, 0xff, 0xc0, 0xff, 0xbf, 0xff, 0xff, 0xff, 0x7f,
-	0xc0, 0xff, 0x7f, 0xef, 0xff, 0xff, 0x7f, 0xc0, 0xff, 0x7f, 0xff, 0xff, 0xfe, 0x7f, 0xc0, 0xff,
-	0x7f, 0xff, 0xfd, 0xfe, 0xff, 0xc0, 0xff, 0x7f, 0xff, 0xfd, 0xfc, 0xff, 0xc0, 0xff, 0x7f, 0xff,
-	0xff, 0xf1, 0xff, 0xc0, 0xff, 0x7f, 0xff, 0xff, 0xfc, 0xff, 0xc0, 0xff, 0xbf, 0xff, 0xff, 0xff,
-	0x7f, 0xc0, 0xff, 0xbf, 0xff, 0xe3, 0xff, 0x3f, 0xc0, 0xff, 0xdf, 0xff, 0xf9, 0xff, 0xbf, 0xc0,
-	0xff, 0xcf, 0xff, 0xfd, 0xff, 0xdf, 0xc0, 0xff, 0xf3, 0x1f, 0xfe, 0xff, 0xdf, 0xc0, 0xff, 0xf8,
-	0x3f, 0xfe, 0xff, 0xdf, 0xc0, 0xff, 0xff, 0xff, 0xfe, 0xff, 0xdf, 0xc0, 0xff, 0xff, 0xff, 0xfe,
-	0xff, 0xdf, 0xc0, 0xff, 0xff, 0xff, 0xfd, 0xff, 0xdf, 0xc0, 0xfe, 0x00, 0x07, 0xfd, 0xff, 0xbf,
-	0xc0, 0xff, 0xff, 0xff, 0xf9, 0xff, 0xbf, 0xc0, 0xff, 0xff, 0xff, 0xf3, 0xff, 0x3f, 0xc0, 0xff,
-	0xff, 0xff, 0xc7, 0xff, 0x7f, 0xc0, 0xfe, 0x00, 0x00, 0x1f, 0xfe, 0xff, 0xc0, 0xff, 0xff, 0xff,
-	0xff, 0xfd, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xff, 0xf3, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xff, 0xc7,
-	0xff, 0xc0, 0xfc, 0x00, 0x00, 0x00, 0x3f, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xc0,
-	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xc0};
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xc0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xc0, 0xff, 0xff, 0xff,
+    0xdf, 0xff, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xc0, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xc0, 0xff, 0xdf, 0xff, 0xff, 0xff, 0xff, 0xc0, 0xff, 0xdf, 0xff, 0xff,
+    0xff, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xc1, 0xff, 0xff, 0xc0, 0xff, 0xff,
+    0xff, 0x18, 0xff, 0xff, 0xc0, 0xff, 0xff, 0xc6, 0x7f, 0x7f, 0x7f, 0xc0,
+    0xff, 0xff, 0x00, 0xff, 0xbf, 0x7f, 0xc0, 0xff, 0xff, 0x7c, 0xff, 0xdf,
+    0xff, 0xc0, 0xff, 0xfe, 0xfe, 0xfb, 0xdf, 0xff, 0xc0, 0xff, 0xfe, 0xfe,
+    0xfb, 0xef, 0xff, 0xc0, 0xff, 0xfe, 0xff, 0x7f, 0xef, 0xff, 0xc0, 0xff,
+    0xf8, 0xff, 0xff, 0xef, 0xff, 0xc0, 0xfe, 0xe3, 0xff, 0xff, 0xe3, 0xff,
+    0xc0, 0xff, 0xcf, 0xff, 0xff, 0x9d, 0xff, 0xc0, 0xff, 0xdf, 0xff, 0xff,
+    0xbe, 0xff, 0xc0, 0xff, 0xbf, 0xff, 0xff, 0xfe, 0xff, 0xc0, 0xff, 0xbf,
+    0xff, 0xff, 0xff, 0x7f, 0xc0, 0xff, 0x7f, 0xef, 0xff, 0xff, 0x7f, 0xc0,
+    0xff, 0x7f, 0xff, 0xff, 0xfe, 0x7f, 0xc0, 0xff, 0x7f, 0xff, 0xfd, 0xfe,
+    0xff, 0xc0, 0xff, 0x7f, 0xff, 0xfd, 0xfc, 0xff, 0xc0, 0xff, 0x7f, 0xff,
+    0xff, 0xf1, 0xff, 0xc0, 0xff, 0x7f, 0xff, 0xff, 0xfc, 0xff, 0xc0, 0xff,
+    0xbf, 0xff, 0xff, 0xff, 0x7f, 0xc0, 0xff, 0xbf, 0xff, 0xe3, 0xff, 0x3f,
+    0xc0, 0xff, 0xdf, 0xff, 0xf9, 0xff, 0xbf, 0xc0, 0xff, 0xcf, 0xff, 0xfd,
+    0xff, 0xdf, 0xc0, 0xff, 0xf3, 0x1f, 0xfe, 0xff, 0xdf, 0xc0, 0xff, 0xf8,
+    0x3f, 0xfe, 0xff, 0xdf, 0xc0, 0xff, 0xff, 0xff, 0xfe, 0xff, 0xdf, 0xc0,
+    0xff, 0xff, 0xff, 0xfe, 0xff, 0xdf, 0xc0, 0xff, 0xff, 0xff, 0xfd, 0xff,
+    0xdf, 0xc0, 0xfe, 0x00, 0x07, 0xfd, 0xff, 0xbf, 0xc0, 0xff, 0xff, 0xff,
+    0xf9, 0xff, 0xbf, 0xc0, 0xff, 0xff, 0xff, 0xf3, 0xff, 0x3f, 0xc0, 0xff,
+    0xff, 0xff, 0xc7, 0xff, 0x7f, 0xc0, 0xfe, 0x00, 0x00, 0x1f, 0xfe, 0xff,
+    0xc0, 0xff, 0xff, 0xff, 0xff, 0xfd, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xff,
+    0xf3, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xff, 0xc7, 0xff, 0xc0, 0xfc, 0x00,
+    0x00, 0x00, 0x3f, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xc0,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xc0};
 
-void showWelcomeScreen(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2)
-{
-	u8g2.clearBuffer();
+void showWelcomeScreen(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2) {
+  u8g2.clearBuffer();
 
-	// 1. VÙNG TRẠNG THÁI (TOP)
-	u8g2.setFont(u8g2_font_5x7_tr);
-	u8g2.drawStr(2, 10, "WiFi:");
-	u8g2.drawStr(32, 10, (configMgr.params.wifiEnabled) ? configMgr.params.ssid.c_str() : "OFF");
+  // 1. VÙNG TRẠNG THÁI (TOP)
+  u8g2.setFont(u8g2_font_5x7_tr);
+  u8g2.drawStr(2, 10, "WiFi:");
+  u8g2.drawStr(32, 10,
+               (configMgr.params.wifiEnabled) ? configMgr.params.ssid.c_str()
+                                              : "OFF");
 
-	// 2. LOGO BÊN TRÁI (50x50)
-	u8g2.drawXBM(2, 16, 50, 50, logo_dust_50x50);
+  // 2. LOGO BÊN TRÁI (50x50)
+  u8g2.drawXBM(2, 16, 50, 50, logo_dust_50x50);
 
-	// 3. PHẦN CHỮ BÊN PHẢI
-	u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
-	// Vì "Kiểm soát thí sinh" quá dài và không có font tiếng Việt U8G2 nào nhỏ hơn 16px, ta nên chia làm 2 dòng
-	u8g2.drawUTF8(55, 26, "Kiểm soát");
-	u8g2.drawUTF8(55, 41, "thí sinh");
+  // 3. PHẦN CHỮ BÊN PHẢI
+  u8g2.setFont(u8g2_font_8x13_tr);
+  u8g2.drawStr(55, 26, "Monitor");
+  u8g2.drawStr(55, 41, "Student");
 
-	u8g2.setFont(u8g2_font_5x7_tr);
-	u8g2.drawStr(55, 53, "RFID, QR");
+  u8g2.setFont(u8g2_font_5x7_tr);
+  u8g2.drawStr(55, 53, "RFID, QR");
 
-	// Sử dụng hằng số từ main.h
-	u8g2.setFont(u8g2_font_5x7_tr);
-	u8g2.setCursor(55, 62);
-	u8g2.print("Ver: ");
-	u8g2.print(FIRMWARE_VERSION); // Gọi từ main.h
+  // Sử dụng hằng số từ main.h
+  u8g2.setFont(u8g2_font_5x7_tr);
+  u8g2.setCursor(55, 62);
+  u8g2.print("Ver: ");
+  u8g2.print(FIRMWARE_VERSION); // Gọi từ main.h
 
-	u8g2.sendBuffer();
+  u8g2.sendBuffer();
 }
 
 /**
  * Hàm hỗ trợ vẽ văn bản có tự động xuống dòng nếu quá dài
  */
-void drawSmartText(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2, int x, int &y, const char *label, String value)
-{
-	u8g2.setCursor(x, y);
-	u8g2.print(label);
+void drawSmartText(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2, int x, int &y,
+                   const char *label, String value) {
+  u8g2.setCursor(x, y);
+  u8g2.print(label);
 
-	int labelWidth = u8g2.getStrWidth(label);
-	int valueWidth = u8g2.getStrWidth(value.c_str());
-	int maxWidth = 120 - labelWidth; // Khoảng trống còn lại trên dòng
+  int labelWidth = u8g2.getStrWidth(label);
+  int valueWidth = u8g2.getStrWidth(value.c_str());
+  int maxWidth = 120 - labelWidth; // Khoảng trống còn lại trên dòng
 
-	if (valueWidth <= maxWidth)
-	{
-		u8g2.print(value);
-		y += 12; // Xuống dòng cho mục tiếp theo
-	}
-	else
-	{
-		// Nếu quá dài, cắt chuỗi hoặc xuống dòng đơn giản
-		// Cách đơn giản nhất: In nhãn, xuống dòng rồi in giá trị đầy đủ
-		y += 10;
-		u8g2.setCursor(x + 10, y); // Thụt lề một chút cho đẹp
-		u8g2.print(value);
-		y += 12;
-	}
+  if (valueWidth <= maxWidth) {
+    u8g2.print(value);
+    y += 12; // Xuống dòng cho mục tiếp theo
+  } else {
+    // Nếu quá dài, cắt chuỗi hoặc xuống dòng đơn giản
+    // Cách đơn giản nhất: In nhãn, xuống dòng rồi in giá trị đầy đủ
+    y += 10;
+    u8g2.setCursor(x + 10, y); // Thụt lề một chút cho đẹp
+    u8g2.print(value);
+    y += 12;
+  }
 }
 
-void showFlashConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2, const char *moretext)
-{
-	u8g2.clearBuffer();
+void showFlashConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2,
+                     const char *moretext) {
+  u8g2.clearBuffer();
 
-	// Tiêu đề
-	u8g2.setFont(u8g2_font_6x12_tr);
-	u8g2.setCursor(0, 10);
-	u8g2.print("DeviceId: ");
-	u8g2.print(configMgr.params.deviceID);
+  // Tiêu đề
+  u8g2.setFont(u8g2_font_6x12_tr);
+  u8g2.setCursor(0, 10);
+  u8g2.print("DeviceId: ");
+  u8g2.print(configMgr.params.deviceID);
 
-	int y = 25;
-	// Hiển thị SSID
-	drawSmartText(u8g2, 0, y, "SSID: ", configMgr.params.ssid);
+  int y = 25;
+  // Hiển thị SSID
+  drawSmartText(u8g2, 0, y, "SSID: ", configMgr.params.ssid);
 
-	// Hiển thị Device ID (Masked Password)
-	String maskedPass = "****";
-	if (configMgr.params.password.length() > 2) {
-		maskedPass += configMgr.params.password.substring(configMgr.params.password.length() - 2);
-	} else if (configMgr.params.password.length() > 0) {
-		maskedPass += configMgr.params.password;
-	} else {
-		maskedPass = ""; // Empty password
-	}
-	drawSmartText(u8g2, 0, y, "Pass: ", maskedPass);
+  // Hiển thị Device ID (Masked Password)
+  String maskedPass = "****";
+  if (configMgr.params.password.length() > 2) {
+    maskedPass += configMgr.params.password.substring(
+        configMgr.params.password.length() - 2);
+  } else if (configMgr.params.password.length() > 0) {
+    maskedPass += configMgr.params.password;
+  } else {
+    maskedPass = ""; // Empty password
+  }
+  drawSmartText(u8g2, 0, y, "Pass: ", maskedPass);
 
-	// --- HIỂN THỊ TRẠNG THÁI WIFI ---
-	u8g2.setCursor(0, y);
-	u8g2.print("WiFi: ");
-	if (!configMgr.params.wifiEnabled)
-	{
-		u8g2.print("OFF");
-	}
-	else
-	{
-		if (wifiStatus)
-		{
-			u8g2.print(WiFi.localIP().toString());
-		}
-		else
-		{
-			u8g2.print("fail [X]");
-		}
-	}
-
-	// Thêm thông tin hiển thị
-	if (moretext != NULL)
-	{
-		y+=12;
-		u8g2.setCursor(0, y);		
-		u8g2.println(moretext);
-	}
-
-	u8g2.sendBuffer();
-}
-
-void showAPConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2)
-{
-	u8g2.clearBuffer();
-
-	// Tiêu đề
-	u8g2.setFont(u8g2_font_6x12_tr);
-	u8g2.setCursor(0, 10);
-	u8g2.print("--- Access Point ---");
-
-	// Hiển thị SSID AP
-	u8g2.setCursor(0, 25);
-	u8g2.print("AP:");
-	u8g2.print(AP_WIFI_SSID);
-
-	// Mask AP password
-	String apPass = "****";
-	String rawPass = String(AP_WIFI_PASSWORD);
-	if (rawPass.length() > 2) {
-		apPass += rawPass.substring(rawPass.length() - 2);
-	} else if (rawPass.length() > 0) {
-		apPass += rawPass;
-	} else {
-		apPass = "";
-	}
-
-	// Hiển thị Pass
-	u8g2.setCursor(0, 40);
-	u8g2.print("P:");
-	u8g2.print(apPass);
-	// Hiển thị IP
-	u8g2.setCursor(0, 55);
-	u8g2.print("IP: 192.168.15.1");
-
-	u8g2.sendBuffer();
-}
-
-void showMqttConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2)
-{
-	u8g2.clearBuffer();
-
-	// Tiêu đề
-	u8g2.setFont(u8g2_font_6x12_tr);
-	u8g2.setCursor(0, 10);
-	u8g2.print("--- MQTT Service ---");
-
-	int y = 25;
-	// Tạo chuỗi Upstream / Downstream
-	String tUp = String("monitor_student/") + configMgr.params.deviceID + "/data";
-	String tDown = String("monitor_student/") + configMgr.params.deviceID + "/cmd";
-
-	// Hiển thị Topic Up
-	drawSmartText(u8g2, 0, y, "Up: ", tUp);
-
-	// Hiển thị Topic Down
-	drawSmartText(u8g2, 0, y, "Dn: ", tDown);
-
-	u8g2.sendBuffer();
-}
-
-// Hàm hỗ trợ tự động cắt tên Tiếng Việt (có dấu) thành 2 dòng chữ to nếu quá dài
-void drawVietnameseName(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2, String studentName) {
-    u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
-    
-    // Tìm dấu cách (space) gần giữa chuỗi để ngắt dòng
-    int splitIdx = -1;
-    int mid = studentName.length() / 2;
-    for (int i = mid; i < studentName.length(); i++) {
-        if(studentName[i] == ' ') { splitIdx = i; break; }
-    }
-    if (splitIdx == -1) {
-        for (int i = mid; i >= 0; i--) {
-            if(studentName[i] == ' ') { splitIdx = i; break; }
-        }
-    }
-
-    // Tiếng việt Unicode độ dài thực tế lớn hơn số lượng chữ, nên string dài > 16 byte thường sẽ bị tràn 128px
-    if (studentName.length() >= 16 && splitIdx != -1) {
-        String l1 = studentName.substring(0, splitIdx);
-        String l2 = studentName.substring(splitIdx + 1);
-        u8g2.drawUTF8(5, 42, l1.c_str());
-        u8g2.drawUTF8(5, 60, l2.c_str());
+  // --- HIỂN THỊ TRẠNG THÁI WIFI ---
+  u8g2.setCursor(0, y);
+  u8g2.print("WiFi: ");
+  if (!configMgr.params.wifiEnabled) {
+    u8g2.print("OFF");
+  } else {
+    if (wifiStatus) {
+      u8g2.print(WiFi.localIP().toString());
     } else {
-        u8g2.drawUTF8(5, 50, studentName.c_str());
+      u8g2.print("fail [X]");
     }
+  }
+
+  // Thêm thông tin hiển thị
+  if (moretext != NULL) {
+    y += 12;
+    u8g2.setCursor(0, y);
+    u8g2.println(moretext);
+  }
+
+  u8g2.sendBuffer();
 }
 
-void showSettingsPage(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2, uint8_t cursorIndex) {
-    u8g2.clearBuffer();
+void showAPConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2) {
+  u8g2.clearBuffer();
 
-    // Title
-    u8g2.setFont(u8g2_font_6x12_tr);
-    u8g2.drawStr(10, 15, "System Settings");
-    u8g2.drawLine(0, 18, 128, 18); // Underline
+  // Tiêu đề
+  u8g2.setFont(u8g2_font_6x12_tr);
+  u8g2.setCursor(0, 10);
+  u8g2.print("--- Access Point ---");
 
-    // Menu Item 0: WiFi
-    if (cursorIndex == 0) u8g2.drawStr(0, 35, ">");
-    u8g2.drawStr(10, 35, "WiFi:");
-    u8g2.drawStr(100, 35, configMgr.params.wifiEnabled ? "ON" : "OFF");
+  // Hiển thị SSID AP
+  u8g2.setCursor(0, 25);
+  u8g2.print("AP:");
+  u8g2.print(AP_WIFI_SSID);
 
-    // Menu Item 1: MQTT (Or other configs)
-    if (cursorIndex == 1) u8g2.drawStr(0, 52, ">");
-    u8g2.drawStr(10, 52, "MQTT:");
-    u8g2.drawStr(100, 52, "ON"); 
+  // Mask AP password
+  String apPass = "****";
+  String rawPass = String(AP_WIFI_PASSWORD);
+  if (rawPass.length() > 2) {
+    apPass += rawPass.substring(rawPass.length() - 2);
+  } else if (rawPass.length() > 0) {
+    apPass += rawPass;
+  } else {
+    apPass = "";
+  }
 
-    // Footer - Guide
-    u8g2.setFont(u8g2_font_5x7_tr);
-    u8g2.drawStr(0, 64, "DblClk:Toggle - Hold:Exit");
+  // Hiển thị Pass
+  u8g2.setCursor(0, 40);
+  u8g2.print("P:");
+  u8g2.print(apPass);
+  // Hiển thị IP
+  u8g2.setCursor(0, 55);
+  u8g2.print("IP: 192.168.15.1");
 
-    u8g2.sendBuffer();
+  u8g2.sendBuffer();
+}
+
+void showMqttConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2) {
+  u8g2.clearBuffer();
+
+  // Tiêu đề
+  u8g2.setFont(u8g2_font_6x12_tr);
+  u8g2.setCursor(0, 10);
+  u8g2.print("--- MQTT Service ---");
+
+  int y = 25;
+  // Tạo chuỗi Upstream / Downstream
+  String tUp = String("monitor_student/") + configMgr.params.deviceID + "/data";
+  String tDown =
+      String("monitor_student/") + configMgr.params.deviceID + "/cmd";
+
+  // Hiển thị Topic Up
+  drawSmartText(u8g2, 0, y, "Up: ", tUp);
+
+  // Hiển thị Topic Down
+  drawSmartText(u8g2, 0, y, "Dn: ", tDown);
+
+  u8g2.sendBuffer();
+}
+
+// Hàm hỗ trợ tự động cắt tên Tiếng Việt (có dấu) thành 2 dòng chữ to nếu quá
+// dài
+void drawVietnameseName(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2,
+                        String studentName) {
+  u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
+
+  // Tìm dấu cách (space) gần giữa chuỗi để ngắt dòng
+  int splitIdx = -1;
+  int mid = studentName.length() / 2;
+  for (int i = mid; i < studentName.length(); i++) {
+    if (studentName[i] == ' ') {
+      splitIdx = i;
+      break;
+    }
+  }
+  if (splitIdx == -1) {
+    for (int i = mid; i >= 0; i--) {
+      if (studentName[i] == ' ') {
+        splitIdx = i;
+        break;
+      }
+    }
+  }
+
+  // Tiếng việt Unicode độ dài thực tế lớn hơn số lượng chữ, nên string dài > 16
+  // byte thường sẽ bị tràn 128px
+  if (studentName.length() >= 16 && splitIdx != -1) {
+    String l1 = studentName.substring(0, splitIdx);
+    String l2 = studentName.substring(splitIdx + 1);
+    u8g2.drawUTF8(5, 42, l1.c_str());
+    u8g2.drawUTF8(5, 60, l2.c_str());
+  } else {
+    u8g2.drawUTF8(5, 50, studentName.c_str());
+  }
+}
+
+void showSettingsPage(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2,
+                      uint8_t cursorIndex) {
+  u8g2.clearBuffer();
+
+  // Title
+  u8g2.setFont(u8g2_font_6x12_tr);
+  u8g2.drawStr(10, 15, "System Settings");
+  u8g2.drawLine(0, 18, 128, 18); // Underline
+
+  // Menu Item 0: WiFi
+  if (cursorIndex == 0)
+    u8g2.drawStr(0, 35, ">");
+  u8g2.drawStr(10, 35, "WiFi:");
+  u8g2.drawStr(100, 35, configMgr.params.wifiEnabled ? "ON" : "OFF");
+
+  // Menu Item 1: MQTT (Or other configs)
+  if (cursorIndex == 1)
+    u8g2.drawStr(0, 52, ">");
+  u8g2.drawStr(10, 52, "MQTT:");
+  u8g2.drawStr(100, 52, configMgr.params.mqttEnabled ? "ON" : "OFF");
+
+  // Footer - Guide
+  u8g2.setFont(u8g2_font_5x7_tr);
+  u8g2.drawStr(0, 64, "DblClk:Toggle");
+
+  u8g2.sendBuffer();
 }

@@ -247,7 +247,7 @@ void loop()
             configMgr.params.wifiEnabled = !configMgr.params.wifiEnabled; 
             if (!configMgr.params.wifiEnabled) ShutdownWiFi(); else WakeupWiFi();
         } else if (settingCursorIndex == 1) {
-            // Tham số thứ 2 (Ví dụ Mqtt hoặc gì đó...)
+            configMgr.params.mqttEnabled = !configMgr.params.mqttEnabled;
         }
         
         configMgr.saveAll();  // Quan trọng: Lưu trực tiếp cấu hình xuống Flash
