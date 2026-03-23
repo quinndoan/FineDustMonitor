@@ -24,4 +24,7 @@ void showMqttConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2);
 // Hàm hỗ trợ tự động cắt tên Tiếng Việt (có dấu) thành 2 dòng chữ to nếu quá dài
 void drawVietnameseName(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2,String studentName);
 
+// Trang cài đặt Settings On/Off
+void showSettingsPage(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2, uint8_t cursorIndex);
+
 #endif

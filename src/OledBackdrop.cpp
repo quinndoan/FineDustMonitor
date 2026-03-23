@@ -228,3 +228,29 @@ void drawVietnameseName(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2, String student
         u8g2.drawUTF8(5, 50, studentName.c_str());
     }
 }
+
+void showSettingsPage(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2, uint8_t cursorIndex) {
+    u8g2.clearBuffer();
+
+    // Tiêu đề
+    u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
+    u8g2.drawUTF8(10, 15, "Cài đặt hệ thống");
+    u8g2.drawLine(0, 18, 128, 18); // Vẽ đường gạch phân cách
+
+    // Mục 0: Cấu hình WiFi
+    if (cursorIndex == 0) u8g2.drawStr(0, 35, ">"); // Icon trỏ chuột
+    u8g2.drawUTF8(10, 35, "WiFi:");
+    u8g2.drawStr(100, 35, configMgr.params.wifiEnabled ? "ON" : "OFF");
+
+    // Mục 1: Cấu hình MQTT (hoặc Còi Buzzer tuỳ bạn)
+    if (cursorIndex == 1) u8g2.drawStr(0, 52, ">");
+    u8g2.drawUTF8(10, 52, "MQTT:");
+    // Ghi chú: Nếu configMgr không có biến mqttEnabled, bạn thay bằng tham số khác
+    u8g2.drawStr(100, 52, "ON"); 
+
+    // Footer - Hướng dẫn 
+    u8g2.setFont(u8g2_font_5x7_tr);
+    u8g2.drawUTF8(0, 64, "Đúp:Bật/Tắt - Giữ:Thoát");
+
+    u8g2.sendBuffer();
+}

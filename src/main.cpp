@@ -41,8 +41,12 @@ ButtonGesture configBtn(CFG_BUTTON);
 #define MODE_AQI 2
 #define MODE_INFO 3
 #define MODE_MQTT 4
-#define MODE_NUM 5
+#define MODE_SETTINGS 5
+#define MODE_NUM 6
 char g_mode;
+
+uint8_t settingCursorIndex = 0; 
+#define MAX_SETTINGS_ITEM 2
 
 
 
@@ -148,6 +152,8 @@ void renderCurrentMode() {
     displayLevel();
   } else if (g_mode == MODE_MQTT) {
     showMqttConfig(u8g2);
+  } else if (g_mode == MODE_SETTINGS) {
+    showSettingsPage(u8g2, settingCursorIndex);
   }
 }
 
@@ -195,6 +201,10 @@ void handleCardCheck(String tag, const char* logPrefix) {
 
     delay(2000);
     renderCurrentMode(); // Phục hồi trang cũ
+    
+    // Xóa bộ đệm và reset cooldown của các module tránh bị bắt trùng thẻ cũ lưu trong RX
+    rfid_clear_rx();
+    nfc_clear_rx();
 }
 
 void loop()
@@ -214,29 +224,64 @@ void loop()
   // Hiển thị Led chỉ thị mặc định theo nút bấm
   if (evt == SHORT_PRESS)
   {
-    Serial.println("Bam nhanh: Chuyen Mode");
-    g_mode = (g_mode + 1) % MODE_NUM;
-    renderCurrentMode();       // Vẽ lại ngay lập tức
-  }
-  else if (evt == DOUBLE_CLICK and g_mode == MODE_INFO)
-  {
-    if (configMgr.params.wifiEnabled)
-    {
-      Serial.println("Tắt WiFi");
-      ShutdownWiFi();
+    if (g_mode == MODE_SETTINGS) {
+        // NẾU: Đang ở trang Settings -> Bấm nhanh là XUỐNG DÒNG (Chuyển con trỏ)
+        settingCursorIndex++;
+        if (settingCursorIndex >= MAX_SETTINGS_ITEM) {
+            // Nếu qua hết các tuỳ chọn -> Thoát để đi sang trang (g_mode) tiếp theo
+            settingCursorIndex = 0;
+            g_mode = (g_mode + 1) % MODE_NUM;
+        }
+        renderCurrentMode(); // Vẽ lại menu làm con trỏ nhảy dòng
+    } else {
+        Serial.println("Bam nhanh: Chuyen Mode");
+        g_mode = (g_mode + 1) % MODE_NUM;
+        renderCurrentMode();       // Vẽ lại ngay lập tức
     }
-    else
+  }
+  else if (evt == DOUBLE_CLICK)
+  {
+    if (g_mode == MODE_SETTINGS) {
+        // Bấm đúp tại Settings -> Bật / Tắt giá trị mục đang đứng
+        if (settingCursorIndex == 0) {
+            configMgr.params.wifiEnabled = !configMgr.params.wifiEnabled; 
+            if (!configMgr.params.wifiEnabled) ShutdownWiFi(); else WakeupWiFi();
+        } else if (settingCursorIndex == 1) {
+            // Tham số thứ 2 (Ví dụ Mqtt hoặc gì đó...)
+        }
+        
+        configMgr.saveAll();  // Quan trọng: Lưu trực tiếp cấu hình xuống Flash
+        buzzerMgr.beepShort(); // Kêu 1 tiếng báo hiệu đã lưu 
+        renderCurrentMode();  // Vẽ lại OLED (Để ON đổi thành OFF)
+        
+    } 
+    else if (g_mode == MODE_INFO)
     {
-      Serial.println("Bật WiFi");
-      WakeupWiFi();
-      // hàm  handleWiFiConnection(); sẽ làm nốt phần việc còn lại ở đầu vòng lắp
+      if (configMgr.params.wifiEnabled)
+      {
+        Serial.println("Tắt WiFi");
+        ShutdownWiFi();
+      }
+      else
+      {
+        Serial.println("Bật WiFi");
+        WakeupWiFi();
+        // hàm  handleWiFiConnection(); sẽ làm nốt phần việc còn lại ở đầu vòng lắp
+      }
     }
   }
   else if (evt == LONG_PRESS_2S)
   {
-    Serial.println("Giữ 2s: Đăng kí WiFi");
-    showAPConfig(u8g2);
-    RegisterWiFi(WIFI_REGISTRATION_METHODS::SELF_STATION);
+    if (g_mode == MODE_SETTINGS) {
+        // Bấm giữ 2s để thoát nhanh về màn hình chính
+        g_mode = MODE_IMMEDIATE;
+        settingCursorIndex = 0;
+        renderCurrentMode();
+    } else {
+        Serial.println("Giữ 2s: Đăng kí WiFi");
+        showAPConfig(u8g2);
+        RegisterWiFi(WIFI_REGISTRATION_METHODS::SELF_STATION);
+    }
   }
 
   // Cập nhật dữ liệu từ module RFID 125kHz
@@ -299,6 +344,10 @@ void loop()
       delay(2500);
       
       renderCurrentMode();
+      
+      // Reset cooldown các module tránh dội thẻ
+      rfid_clear_rx();
+      nfc_clear_rx();
     }
   }
 
