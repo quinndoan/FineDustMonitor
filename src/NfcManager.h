@@ -5,10 +5,10 @@
 #include <SPI.h>
 #include <MFRC522.h>
 
-// Chân giao tiếp mặc định cho SPI của ESP32 (Thường là VSPI):
+// Default SPI pins for ESP32 (usually VSPI):
 // SCK = 18, MISO = 19, MOSI = 23
-#define SS_PIN  5  // Chân CS (SDA) của MFRC522
-#define RST_PIN 32  // Chân RST của MFRC522 (Đổi từ 22 sang 32 để tránh trùng I2C SCL của ngõ màn OLED)
+#define SS_PIN  5   // CS (SDA) pin of MFRC522
+#define RST_PIN 32  // RST pin of MFRC522 (moved from 22 to avoid conflict with OLED I2C SCL)
 
 void nfc_init();
 void nfc_update();
