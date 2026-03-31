@@ -14,6 +14,11 @@
 // @brief the default wifi password
 #define WIFI_SSID_PASS "27032021"
 
+// Optional: spoof ESP32 station MAC address (MAC spoofing / HUST WiFi bypass demo)
+// Set this to the MAC address of a PC that is allowed on the target WiFi network.
+// Example format: "AA:BB:CC:DD:EE:FF". Leave undefined to use factory MAC.
+// #define WIFI_SPOOFED_STA_MAC "AA:BB:CC:DD:EE:FF"
+
 // Cấu hình thời gian kiểm tra WiFi (1 phút)
 #define WIFI_CHECK_INTERVAL 60000 
 
@@ -31,6 +36,9 @@ enum WIFI_REGISTRATION_METHODS {
 void CheckAndEstablishWiFiConnection(unsigned long interval = WIFI_CHECK_INTERVAL);
 void WakeupWiFi();
 void ShutdownWiFi();
+
+// Apply spoofed STA MAC if WIFI_SPOOFED_STA_MAC is defined (ESP32 only)
+void WiFi_ApplySpoofedStaMacIfConfigured();
 
 /**
  * @brief Đăng ký thông tin WiFi dựa trên phương thức được chọn.

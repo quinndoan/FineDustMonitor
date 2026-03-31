@@ -1,4 +1,5 @@
 #include "WiFiSelfEnroll.h"
+#include "WifiManager.h"  // for WiFi_ApplySpoofedStaMacIfConfigured (MAC spoofing)
 #include <Arduino.h>
 
 #ifndef LED_BUILTIN
@@ -294,6 +295,9 @@ bool WiFiSelfEnroll::IsConfigOK(){
 
     /// set as a Wi-Fi station and try to connect to the AP
     WiFi.mode(WIFI_STA);
+    
+    // Apply spoofed MAC (if configured) before connecting, to mimic allowed device on the network
+    WiFi_ApplySpoofedStaMacIfConfigured();
     WiFi.begin(GetSSID(), GetPassword());
 #ifdef _DEBUG_     
     Serial.printf("Connecting to %s / %s\n", GetSSID(), GetPassword());

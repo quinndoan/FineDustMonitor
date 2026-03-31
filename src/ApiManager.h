@@ -3,8 +3,8 @@
 
 #include <Arduino.h>
 
-// Bạn cần thay thế URL này bằng đường link Web App (Google Apps Script) thật của bạn.
-// Lưu ý: phải giữ lại /exec ở cuối thay vì /edit
+// Thay thế URL này bằng đường link Web App (Google Apps Script) thật
+// Lưu ý: phải giữ lại /exec ở cuối
 #define MASTER_API_URL "https://script.google.com/macros/s/AKfycbzWF7wlngKlPK0G-t-TKuhNBFC8M-smhzQ0rm5XgRYshKE4VzOIVrXh8queL87xv9IKRQ/exec"
 
 class ApiManager {
