@@ -1,14 +1,14 @@
 #pragma once
 
 #include <Arduino.h>
+#include "HardwareConfig.h"
 
-// Cấu hình chân UART cho module RFID 125kHz
-// Bạn có thể chỉnh lại cho đúng với phần cứng của mình
-#define RFID_RX_PIN 16
-#define RFID_TX_PIN 17  // thường không dùng, nhưng cần cho Serial2.begin
+#if !ENABLE_RFID_125KHZ
+	#error "Rfid125khzManager requires ENABLE_RFID_125KHZ=1 in HardwareConfig.h"
+#endif
 
-// Tốc độ baud phổ biến cho module RFID 125kHz (VD: RDM6300)
-#define RFID_BAUD 9600
+// Pin and baudrate assignments for 125kHz RFID module (configured in HardwareConfig.h)
+// Note: Override these by defining in platformio.ini if different from defaults
 
 // Khởi tạo UART cho RFID
 void rfid_init();

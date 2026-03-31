@@ -2,13 +2,18 @@
 #define NFC_MANAGER_H
 
 #include <Arduino.h>
+#include "HardwareConfig.h"
+
+#if !ENABLE_NFC_MFRC522
+	#error "NFC_MANAGER requires ENABLE_NFC_MFRC522=1 in HardwareConfig.h"
+#endif
+
 #include <SPI.h>
 #include <MFRC522.h>
 
-// Default SPI pins for ESP32 (usually VSPI):
-// SCK = 18, MISO = 19, MOSI = 23
-#define SS_PIN  5   // CS (SDA) pin of MFRC522
-#define RST_PIN 32  // RST pin of MFRC522 (moved from 22 to avoid conflict with OLED I2C SCL)
+// Pin assignments for MFRC522 NFC module (configured in HardwareConfig.h)
+#define SS_PIN  NFC_SS_PIN   // CS (SDA) pin of MFRC522
+#define RST_PIN NFC_RST_PIN  // RST pin of MFRC522
 
 void nfc_init();
 void nfc_update();

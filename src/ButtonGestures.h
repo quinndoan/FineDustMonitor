@@ -2,9 +2,14 @@
 #define BUTTON_GESTURE_H
 
 #include <Arduino.h>
+#include "HardwareConfig.h"
 
-// --- NÚT BẤM -----
-#define CFG_BUTTON 4
+#if !ENABLE_CONFIG_BUTTON
+    #error "ButtonGesture requires ENABLE_CONFIG_BUTTON=1 in HardwareConfig.h"
+#endif
+
+// Configuration button pin (defined in HardwareConfig.h)
+#define CFG_BUTTON CFG_BUTTON_PIN
 
 enum ButtonEvent {
     NONE,

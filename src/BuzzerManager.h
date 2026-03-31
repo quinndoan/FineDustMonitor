@@ -2,9 +2,14 @@
 #define BUZZER_MANAGER_H
 
 #include <Arduino.h>
+#include "HardwareConfig.h"
 
-// Chân GPIO kết nối với loa còi (Active Buzzer)
-#define BUZZER_PIN 12
+#if !ENABLE_BUZZER
+    #error "BuzzerManager requires ENABLE_BUZZER=1 in HardwareConfig.h"
+#endif
+
+// GPIO pin for buzzer (configured in HardwareConfig.h)
+// BUZZER_PIN is already defined in HardwareConfig.h
 
 class BuzzerManager {
 public:

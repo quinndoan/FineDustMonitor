@@ -1,6 +1,50 @@
 # THIẾT BỊ QUAN TRĂC BỤI MIN
 
 Chương trình được thiết kế cho vi điều khiển Wemos D1 Mini (ESP8266) để đo nồng độ bụi mịn trong không khí sử dụng cảm biến SDS011.
+## ⚙️ Hệ Thống Cấu Hình Phần Cứng (Hardware Configuration)
+
+**MỚI:** Dự án đã được tái cấu trúc để hỗ trợ nhiều nền tảng vi điều khiển (ESP32, STM32, Arduino, v.v.). 
+
+- 📖 Xem chi tiết: [`HARDWARE_CONFIG.md`](HARDWARE_CONFIG.md)
+- 🚀 Hướng dẫn nhanh: [`QUICK_REFERENCE.md`](QUICK_REFERENCE.md)
+- 🔧 Tệp cấu hình: [`src/HardwareConfig.h`](src/HardwareConfig.h)
+
+### Thay Đổi Nhanh MCU
+
+Để xây dựng cho platform khác, chỉ cần thay đổi flag trong `platformio.ini`:
+
+```ini
+; Cho ESP32 (mặc định)
+build_flags = -DMCU_IS_ESP32
+
+; Cho STM32
+build_flags = -DMCU_IS_STM32 -DENABLE_WIFI=0
+
+; Cho Arduino Mega
+build_flags = -DMCU_IS_ARDUINO_MEGA
+
+; Tùy chỉnh chân GPIO
+build_flags = 
+    -DMCU_IS_ESP32
+    -DBUZZER_PIN=13
+    -DNFC_SS_PIN=5
+```
+
+### Tính Năng Có Thể Tắt/Bật
+
+```ini
+; Trong platformio.ini
+build_flags = 
+    -DENABLE_OLED_DISPLAY=1
+    -DENABLE_WIFI=1
+    -DENABLE_MQTT=1
+    -DENABLE_NFC_MFRC522=1
+    -DENABLE_RFID_125KHZ=1
+    -DENABLE_BUZZER=1
+```
+
+---
+
 
 Hệ thống cung cấp khả năng theo dõi thời gian thực các chỉ số PM2.5 và PM10, đồng thời tính toán chỉ số chất lượng không khí AQI theo tiêu chuẩn US EPA. Dữ liệu được hiển thị trực quan trên màn hình OLED 1.3 inch và có khả năng kết nối WiFi để quản lý từ xa.
 

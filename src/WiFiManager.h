@@ -2,25 +2,13 @@
 #define WIFI_MANAGER_H
 
 #include <Arduino.h>
+#include "HardwareConfig.h"
+
+#if !ENABLE_WIFI
+    #error "WiFiManager requires ENABLE_WIFI=1 in HardwareConfig.h"
+#endif
 
 
-// /// @brief the default wifi SSID
-// #define WIFI_SSID_NAME "SOICT_CORE_BOARD"
-// /// @brief the default wifi password
-// #define WIFI_SSID_PASS "12345678"
-
-// wifi cho chế độ STA, gần như là không cần thiết vì đang đọc từ litlefs rồi
-#define WIFI_SSID_NAME "Quinn"
-// @brief the default wifi password
-#define WIFI_SSID_PASS "27032021"
-
-// Optional: spoof ESP32 station MAC address (MAC spoofing / HUST WiFi bypass demo)
-// Set this to the MAC address of a PC that is allowed on the target WiFi network.
-// Example format: "AA:BB:CC:DD:EE:FF". Leave undefined to use factory MAC.
-// #define WIFI_SPOOFED_STA_MAC "AA:BB:CC:DD:EE:FF"
-
-// Cấu hình thời gian kiểm tra WiFi (1 phút)
-#define WIFI_CHECK_INTERVAL 60000 
 
 enum WIFI_REGISTRATION_METHODS {
     SELF_STATION,

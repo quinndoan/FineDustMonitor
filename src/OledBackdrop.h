@@ -1,5 +1,11 @@
 #ifndef GREETINGCARD_H
 #define GREETINGCARD_H
+#include "HardwareConfig.h"
+
+#if !ENABLE_OLED_DISPLAY
+	#error "OledBackdrop requires ENABLE_OLED_DISPLAY=1 in HardwareConfig.h"
+#endif
+
 
 #include <U8g2lib.h>
 

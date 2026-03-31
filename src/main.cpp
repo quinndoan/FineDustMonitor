@@ -1,11 +1,49 @@
 // Arduino core
 #include <Arduino.h>
+ 
+ // Hardware configuration MUST be included first
+#include "HardwareConfig.h"
+ // Core modules (always included)
+#include "ConfigManager.h"  // Cấu hình ghi bộ nhớ Flash
+#include "ApiManager.h"    // Request HTTPS kiểm tra MSSV với Google Sheet
+#include "main.h"           // Thông tin dev
+ 
+ // Display module
+#if ENABLE_OLED_DISPLAY
 
 // Màn hình và I2C
 #include <U8g2lib.h>
 #include <Wire.h>
-
-#include "ConfigManager.h"  // Cấu hình ghi bộ nhớ Flash
+#include "OledBackdrop.h"   // Giao diện chào trên màn hình điện tử
+#endif
+ 
+ // Communication modules
+#if ENABLE_WIFI
+#include "WifiManager.h"    // Quản lý wifi
+#endif
+ 
+#if ENABLE_MQTT
+#include "MqttManager.h"    // Gửi dữ liệu lên MQTT mặc định mqtt.toolhub.app
+#endif
+ 
+ // Input modules
+#if ENABLE_CONFIG_BUTTON
+#include "ButtonGestures.h" // Quản lý các hình thái bấm của 1 nút button
+#endif
+ 
+ // Output modules
+#if ENABLE_BUZZER
+#include "BuzzerManager.h" // Quản lý Loa Buzzer
+#endif
+ 
+ // RFID/NFC modules
+#if ENABLE_RFID_125KHZ
+#include "Rfid125khzManager.h"   // Quản lý RFID 125kHz
+#endif
+ 
+#if ENABLE_NFC_MFRC522
+#include "NfcManager.h"    // Quản lý MFRC522 13.56MHz
+#endif
 #include "WifiManager.h"    // Quản lý wifi
 #include "OledBackdrop.h"   // Giao diện chào trên màn hình điện tử
 #include "ButtonGestures.h" // Quản lý các hình thái bấm của 1 nút button
@@ -18,18 +56,20 @@
 
 // --- KHÔNG CÒN SỬ DỤNG MODULE BỤI SDS011 ---
 
-#ifndef LED_BUILTIN
-  // Đa số board ESP32 dùng GPIO2 cho LED on-board
-  #define LED_BUILTIN 2
+ // LED status indicator
+ // LED_BUILTIN is defined in HardwareConfig.h
+ 
+ // --- GLOBAL OBJECTS (conditionally defined based on features) ---
+ 
+ // OLED Display
+#if ENABLE_OLED_DISPLAY
+ U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 #endif
-
-// --- CẤU HÌNH OLED (1.3" SH1106 I2C) ---
-U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
-
-// Mảng lưu trữ các thông tin khác (nếu cần sau này)
-
-/** Quản lý các hình thái bấm của 1 nút button */
-ButtonGesture configBtn(CFG_BUTTON);
+ 
+ // Configuration button
+#if ENABLE_CONFIG_BUTTON
+ ButtonGesture configBtn(CFG_BUTTON);
+#endif
 
 // Chọn tên font mới
 #define VIETNAMESE_FONT u8g2_font_unifont_t_vietnamese2
@@ -108,11 +148,15 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
 
-  // 7. Nút bấm
+  // 7. Initialize Config Button
+#if ENABLE_CONFIG_BUTTON
   configBtn.begin();
+#endif
 
-  // 8. Khởi tạo còi Buzzer
+  // 8. Initialize Buzzer
+#if ENABLE_BUZZER
   buzzerMgr.begin();
+  #endif
   buzzerMgr.beepShort(); // Còi bíp 1 tiếng báo hiệu boot xong
 
   // 9. Mode hoạt động đầu tiên (vào thẳng trang đo đạc)
