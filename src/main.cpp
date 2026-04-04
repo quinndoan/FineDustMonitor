@@ -44,6 +44,7 @@
 #if ENABLE_NFC_MFRC522
 #include "NfcManager.h"    // Quản lý MFRC522 13.56MHz
 #endif
+
 #include "WifiManager.h"    // Quản lý wifi
 #include "OledBackdrop.h"   // Giao diện chào trên màn hình điện tử
 #include "ButtonGestures.h" // Quản lý các hình thái bấm của 1 nút button
@@ -53,6 +54,7 @@
 #include "BuzzerManager.h" // Quản lý Loa Buzzer
 #include "ApiManager.h"    // Request HTTPS kiểm tra MSSV với Google Sheet
 #include "NfcManager.h"    // Quản lý MFRC522 13.56MHz
+#include "QrManager.h"     // Quản lý QR scanner qua UART
 
 // --- KHÔNG CÒN SỬ DỤNG MODULE BỤI SDS011 ---
 
@@ -176,6 +178,9 @@ void setup()
 
   // Khởi tạo module NFC 13.56MHz (MFRC522)
   nfc_init();
+
+  // Khởi tạo module QR scanner UART (MH-ET LIVE)
+  qr_init();
 
   delay(2000);
 }
@@ -344,54 +349,13 @@ void loop()
     handleCardCheck(nfc_get_last_tag(), "[NFC/MFRC522]");
   }
 
-  // --- BƯỚC 1: GIẢ LẬP ĐỌC QR CODE TỪ SERIAL (Mục 1) ---
-  if (Serial.available() > 0) {
-    String qr_url = Serial.readStringUntil('\n');
-    qr_url.trim(); // Loại bỏ khoảng trắng hoặc ký tự \r dư thừa ở cuối
-
-    if (qr_url.length() > 0) {
-      buzzerMgr.beepOk(); // Kêu dài để mô phỏng qr nhận
-      
-      Serial.print("\n[QR_SIMULATION] Quet thanh cong URL: ");
-      Serial.println(qr_url);
-
-      // Gửi data URL lên MQTT Server (Gộp chung logic Bước 3)
-      String jsonPayload = "{\"qr\":\"" + qr_url + "\"}";
-      mqttMgr.publishString(jsonPayload);
-
-      // --- BƯỚC 4: GỌI API BẰNG LINK QR VỪA QUÉT THAY VÌ MÃ THẺ ---
-      u8g2.clearBuffer();
-      u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
-      u8g2.drawUTF8(5, 20, "Tra cứu Server");
-      u8g2.sendBuffer();
-      
-      String studentName = apiMgr.verifyStudent(qr_url, false);
-      
-      u8g2.clearBuffer();
-      if(studentName != "") {
-          u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
-          u8g2.drawUTF8(5, 20, "Vào cửa: OK");
-          
-          // Vẽ tên tiếng Việt hiển thị đủ dấu
-          drawVietnameseName(u8g2,studentName);
-          
-          u8g2.sendBuffer();
-          buzzerMgr.beepOk();
-      } else {
-          u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
-          u8g2.drawUTF8(20, 35, "[X] LỖI QR");
-          u8g2.sendBuffer();
-          buzzerMgr.beepError();
-      }
-
-      // Giữ màn hình báo nhận thẻ trong 2.5s rồi hồi phục
-      delay(2500);
-      
-      renderCurrentMode();
-      
-      // Reset cooldown các module tránh dội thẻ
-      // rfid_clear_rx();
-      // nfc_clear_rx();
+  // Cập nhật dữ liệu từ module QR scanner và chỉ in payload ra terminal
+  qr_update();
+  if (qr_has_new_payload()) {
+    const String qrPayload = qr_get_last_payload();
+    if (qrPayload.length() > 0) {
+      Serial.print("[QR/UART] ");
+      Serial.println(qrPayload);
     }
   }
 

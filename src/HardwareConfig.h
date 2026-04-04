@@ -61,6 +61,10 @@
     #define ENABLE_CONFIG_BUTTON 1 // 0 = disable, 1 = enable Config button
 #endif
 
+#ifndef ENABLE_QR_SCANNER
+    #define ENABLE_QR_SCANNER 1    // 0 = disable, 1 = enable UART QR scanner
+#endif
+
 // ============================================================================
 // 3. LIBRARY SELECTION
 // ============================================================================
@@ -113,6 +117,14 @@
         #define RFID_TX_PIN 17
     #endif
 
+    // UART pins for QR scanner module (MH-ET LIVE)
+    #ifndef QR_RX_PIN
+        #define QR_RX_PIN 27
+    #endif
+    #ifndef QR_TX_PIN
+        #define QR_TX_PIN 33
+    #endif
+
     // GPIO pins
     #ifndef BUZZER_PIN
         #define BUZZER_PIN 12
@@ -130,6 +142,9 @@
     #endif
     #ifndef RFID_BAUD
         #define RFID_BAUD 9600
+    #endif
+    #ifndef QR_BAUD
+        #define QR_BAUD 9600
     #endif
 
 #endif // MCU_IS_ESP32
