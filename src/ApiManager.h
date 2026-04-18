@@ -5,7 +5,7 @@
 
 // Thay thế URL này bằng đường link Web App (Google Apps Script) thật
 // Lưu ý: phải giữ lại /exec ở cuối
-#define MASTER_API_URL "https://script.google.com/macros/s/AKfycbzWF7wlngKlPK0G-t-TKuhNBFC8M-smhzQ0rm5XgRYshKE4VzOIVrXh8queL87xv9IKRQ/exec"
+#define MASTER_API_URL "https://script.google.com/macros/s/AKfycbyLpNcShSwP-djZiftcjqUS6fwbeXM1hiuPgDZknWimnHI4sdukUm2B2cvpjaZUDXs1hw/exec"
 
 class ApiManager {
 public:
@@ -15,9 +15,11 @@ public:
      * @brief Gọi API Google Sheet để xác thực
      * @param scannedData Chuỗi URL quét được hoặc mã RFID
      * @param isRfid Biến bool đánh dấu xem đây là thẻ RFID hay mã QR (để Google phân loại dò tìm)
-     * @return String rỗng ("") nếu bị Từ chối/Lỗi. Trả về tên hoặc mssv nếu Hợp lệ.
+     * @param studentIdOut MSSV trả về từ Google Sheet
+     * @param fullNameOut Họ tên trả về từ Google Sheet
+     * @return true nếu hợp lệ, false nếu bị từ chối/lỗi
      */
-    String verifyStudent(String scannedData, bool isRfid);
+    bool verifyStudent(String scannedData, bool isRfid, String &studentIdOut, String &fullNameOut);
 };
 
 extern ApiManager apiMgr;

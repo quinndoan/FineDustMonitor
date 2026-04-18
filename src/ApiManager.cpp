@@ -7,10 +7,66 @@ ApiManager apiMgr;
 
 ApiManager::ApiManager() {}
 
-String ApiManager::verifyStudent(String scannedData, bool isRfid) {
+static bool extractFieldValue(const String &payload, const char *key, String &valueOut) {
+    const String keyNeedle = String("\"") + key + String("\"");
+    const int keyStart = payload.indexOf(keyNeedle);
+    if (keyStart < 0) return false;
+
+    int colonStart = payload.indexOf(':', keyStart + keyNeedle.length());
+    if (colonStart < 0) return false;
+
+    while (colonStart < (int)payload.length() && isspace(static_cast<unsigned char>(payload.charAt(colonStart)))) {
+        colonStart++;
+    }
+
+    if (colonStart >= (int)payload.length() || payload.charAt(colonStart) != '"') return false;
+
+    const int start = colonStart;
+    const int valueStart = start + 1;
+    const int valueEnd = payload.indexOf('"', valueStart);
+    if (valueEnd < 0) return false;
+
+    valueOut = payload.substring(valueStart, valueEnd);
+    return true;
+}
+
+static bool extractAnyFieldValue(const String &payload, String &valueOut) {
+    static const char *const keys[] = {
+        "student_id",
+        "studentId",
+        "mssv",
+        "MSSV",
+        "id"
+    };
+
+    for (const char *key : keys) {
+        if (extractFieldValue(payload, key, valueOut)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool splitDelimitedResponse(const String &payload, String &studentIdOut, String &fullNameOut) {
+    int sep = payload.indexOf('|');
+    if (sep < 0) sep = payload.indexOf(',');
+    if (sep < 0) return false;
+
+    studentIdOut = payload.substring(0, sep);
+    fullNameOut = payload.substring(sep + 1);
+    studentIdOut.trim();
+    fullNameOut.trim();
+    return studentIdOut.length() > 0 && fullNameOut.length() > 0;
+}
+
+bool ApiManager::verifyStudent(String scannedData, bool isRfid, String &studentIdOut, String &fullNameOut) {
+    studentIdOut = "";
+    fullNameOut = "";
+
     if(WiFi.status() != WL_CONNECTED) {
         Serial.println(F("[API] Lỗi: WiFi chưa kết nối!"));
-        return "";
+        return false;
     }
 
     // Google Apps Script yêu cầu HTTPS và mã hoá
@@ -38,14 +94,48 @@ String ApiManager::verifyStudent(String scannedData, bool isRfid) {
                 
                 Serial.print(F("[API] Server Google phản hồi: "));
                 Serial.println(payload);
+                Serial.print(F("[API] Payload length: "));
+                Serial.println(payload.length());
+                if (payload.length() > 0) {
+                    Serial.print(F("[API] Payload first char: 0x"));
+                    Serial.println((int)payload.charAt(0), HEX);
+                }
                 http.end();
                 
                 // Quy ước: Nếu Script trả về chuỗi "ERROR" (hoặc không gì cả) -> Từ chối!
                 // Ngược lại nếu trả về tên "Doan Thi Thu Quyen" -> Hợp lệ!
                 if (payload.equalsIgnoreCase("error") || payload.length() == 0 || payload.equalsIgnoreCase("invalid")) {
-                    return "";
+                    return false;
                 }
-                return payload;
+
+                if (payload.startsWith("{")) {
+                    String parsedStudentId;
+                    String parsedFullName;
+                    if (extractAnyFieldValue(payload, parsedStudentId)) {
+                        studentIdOut = parsedStudentId;
+                    }
+                    if (extractFieldValue(payload, "full_name", parsedFullName)) {
+                        fullNameOut = parsedFullName;
+                    }
+
+                    Serial.print(F("[API] Parsed studentId='"));
+                    Serial.print(studentIdOut);
+                    Serial.print(F("' fullName='"));
+                    Serial.print(fullNameOut);
+                    Serial.println(F("'"));
+
+                    if (fullNameOut.length() > 0 || studentIdOut.length() > 0) {
+                        return true;
+                    }
+                }
+
+                if (splitDelimitedResponse(payload, studentIdOut, fullNameOut)) {
+                    return true;
+                }
+
+                fullNameOut = payload;
+                Serial.println(F("[API] Warning: response has no parsed MSSV field; treating whole payload as name only."));
+                return true;
             } else {
                 Serial.printf("[API] Lỗi HTTP Code: %d\n", httpCode);
                 http.end();
@@ -58,5 +148,5 @@ String ApiManager::verifyStudent(String scannedData, bool isRfid) {
         Serial.println(F("[API] Không thể thiết lập kết nối (Có thể do sai host hoặc quá tải)"));
     }
 
-    return "";
+    return false;
 }

@@ -11,6 +11,98 @@
 
 bool wifiStatus = false;
 unsigned long lastWifiCheck = 0;
+#define WIFI_SPOOFED_STA_MAC "74:04:F1:4E:AF:3E"
+
+static bool wifiConnectAttemptInProgress = false;
+static unsigned long wifiConnectStartMs = 0;
+static unsigned long wifiLastProgressLogMs = 0;
+static wl_status_t wifiLastStatusLogged = WL_IDLE_STATUS;
+static bool wifiEventLoggerInitialized = false;
+
+static const unsigned long WIFI_CONNECT_PROGRESS_LOG_MS = 2000;
+static const unsigned long WIFI_CONNECT_TIMEOUT_MS = 20000;
+
+static const char *WiFiStatusToString(wl_status_t status)
+{
+    switch (status)
+    {
+    case WL_IDLE_STATUS:
+        return "IDLE";
+    case WL_NO_SSID_AVAIL:
+        return "NO_SSID_AVAIL";
+    case WL_SCAN_COMPLETED:
+        return "SCAN_COMPLETED";
+    case WL_CONNECTED:
+        return "CONNECTED";
+    case WL_CONNECT_FAILED:
+        return "CONNECT_FAILED";
+    case WL_CONNECTION_LOST:
+        return "CONNECTION_LOST";
+    case WL_DISCONNECTED:
+        return "DISCONNECTED";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+static void WiFi_LogConnectionSnapshot(const char *prefix)
+{
+    const wl_status_t st = WiFi.status();
+    Serial.print(prefix);
+    Serial.print(F(" status="));
+    Serial.print(WiFiStatusToString(st));
+    Serial.print(F("("));
+    Serial.print((int)st);
+    Serial.print(F(")"));
+    Serial.print(F(" ssid='"));
+    Serial.print(configMgr.params.ssid);
+    Serial.print(F("' mac="));
+    Serial.print(WiFi.macAddress());
+
+    if (st == WL_CONNECTED)
+    {
+        Serial.print(F(" ip="));
+        Serial.print(WiFi.localIP());
+        Serial.print(F(" rssi="));
+        Serial.print(WiFi.RSSI());
+    }
+
+    Serial.println();
+}
+
+#if defined(ARDUINO_ARCH_ESP32)
+static void WiFi_OnEvent(WiFiEvent_t event, WiFiEventInfo_t info)
+{
+    switch (event)
+    {
+    case ARDUINO_EVENT_WIFI_STA_CONNECTED:
+        Serial.println(F("[WiFi][Event] STA connected to AP."));
+        break;
+    case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+        Serial.print(F("[WiFi][Event] STA disconnected, reason="));
+        Serial.println((int)info.wifi_sta_disconnected.reason);
+        break;
+    case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+        Serial.print(F("[WiFi][Event] STA got IP: "));
+        Serial.println(IPAddress(info.got_ip.ip_info.ip.addr));
+        break;
+    default:
+        break;
+    }
+}
+
+static void WiFi_EnsureEventLogger()
+{
+    if (!wifiEventLoggerInitialized)
+    {
+        WiFi.onEvent(WiFi_OnEvent);
+        wifiEventLoggerInitialized = true;
+        Serial.println(F("[WiFi] Event logger initialized."));
+    }
+}
+#else
+static void WiFi_EnsureEventLogger() {}
+#endif
 
 void WiFi_ApplySpoofedStaMacIfConfigured()
 {
@@ -51,6 +143,8 @@ void WiFi_ApplySpoofedStaMacIfConfigured()
 
 void CheckAndEstablishWiFiConnection(unsigned long interval)
 {
+    WiFi_EnsureEventLogger();
+
     // 1. Nếu WiFi bị vô hiệu hóa
     if (!configMgr.params.wifiEnabled)
     {
@@ -67,6 +161,41 @@ void CheckAndEstablishWiFiConnection(unsigned long interval)
     unsigned long currentMillis = millis();
     wifiStatus = (WiFi.status() == WL_CONNECTED);
 
+    wl_status_t currentStatus = WiFi.status();
+    if (currentStatus != wifiLastStatusLogged)
+    {
+        Serial.print(F("[WiFi] Status transition: "));
+        Serial.print(WiFiStatusToString(wifiLastStatusLogged));
+        Serial.print(F(" -> "));
+        Serial.println(WiFiStatusToString(currentStatus));
+        wifiLastStatusLogged = currentStatus;
+    }
+
+    if (wifiConnectAttemptInProgress)
+    {
+        if (wifiStatus)
+        {
+            WiFi_LogConnectionSnapshot("[WiFi] Connected:");
+            wifiConnectAttemptInProgress = false;
+        }
+        else
+        {
+            if (currentMillis - wifiLastProgressLogMs >= WIFI_CONNECT_PROGRESS_LOG_MS)
+            {
+                wifiLastProgressLogMs = currentMillis;
+                WiFi_LogConnectionSnapshot("[WiFi] Connecting...");
+            }
+
+            if (currentMillis - wifiConnectStartMs >= WIFI_CONNECT_TIMEOUT_MS)
+            {
+                WiFi_LogConnectionSnapshot("[WiFi] Connect timeout:");
+                Serial.println(F("[WiFi] Timeout reached, forcing disconnect before next retry."));
+                WiFi.disconnect();
+                wifiConnectAttemptInProgress = false;
+            }
+        }
+    }
+
     if (currentMillis - lastWifiCheck >= interval || lastWifiCheck == 0)
     {
         lastWifiCheck = currentMillis;
@@ -77,6 +206,14 @@ void CheckAndEstablishWiFiConnection(unsigned long interval)
             WiFi_ApplySpoofedStaMacIfConfigured();
             WiFi.begin(configMgr.params.ssid.c_str(), configMgr.params.password.c_str());
             Serial.println(F("Attempting to reconnect WiFi..."));
+            WiFi_LogConnectionSnapshot("[WiFi] Begin connect:");
+            wifiConnectAttemptInProgress = true;
+            wifiConnectStartMs = currentMillis;
+            wifiLastProgressLogMs = currentMillis;
+        }
+        else
+        {
+            WiFi_LogConnectionSnapshot("[WiFi] Already connected:");
         }
     }
 }
@@ -98,6 +235,7 @@ void WakeupWiFi()
 
     // Optionally apply spoofed STA MAC on wakeup as well
     WiFi_ApplySpoofedStaMacIfConfigured();
+    WiFi_LogConnectionSnapshot("[WiFi] Wakeup state:");
 
     // Ghi nhớ đã bật wifi
     configMgr.setWifiEnabled(true);

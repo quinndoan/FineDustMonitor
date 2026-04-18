@@ -241,7 +241,7 @@ void setup()
 {
   // 1. Serial MẶC ĐỊNH (cho Debug/PC)
   Serial.begin(115200);
-  Serial.println("\nKhoi dong thiet bi quan trac bui min.");
+  Serial.println("\nStart Monitor Student Device...");
 
   // 2. Lấy cấu hình từ Flash
   if (configMgr.begin())
@@ -332,29 +332,38 @@ void handleCardCheck(String tag, const char* logPrefix) {
 
     // --- BƯỚC 4: GỌI API KIỂM TRA HỢP LỆ VÀ XUẤT LÊN MÀN HÌNH ---
     u8g2.clearBuffer();
-    u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
-    u8g2.drawUTF8(5, 20, "Đang xử lý...");
+    u8g2.setFont(u8g2_font_8x13B_tr);
+    u8g2.drawUTF8(5, 20, "Processing...");
     u8g2.sendBuffer();
     
     // Yêu cầu API quét (mất ~1-2s)
-    String studentName = apiMgr.verifyStudent(tag, true);
+    String studentId;
+    String studentName;
+    bool isAccepted = apiMgr.verifyStudent(tag, true, studentId, studentName);
     
     u8g2.clearBuffer();
-    if(studentName != "") {
+    if(isAccepted) {
         // HỢP LỆ
-        u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
-        u8g2.drawUTF8(5, 20, "Vào cửa: OK");
+        u8g2.setFont(u8g2_font_7x14B_tr);
+        u8g2.drawUTF8(5, 20, "Student: Accepted");
         
+      if (studentId.length() > 0) {
+        Serial.print("[API] Student ID: ");
+        Serial.println(studentId);
+
+        u8g2.drawUTF8(5, 34, ("MSSV: " + studentId).c_str());
+      }
+
         // Vẽ tên tiếng Việt có dấu to rõ với tính năng chia dòng
-        drawVietnameseName(u8g2,studentName);
+      drawVietnameseName(u8g2, studentName);
         
         u8g2.sendBuffer();
         
         buzzerMgr.beepOk(); // Bíp dài
     } else {
         // TỪ CHỐI
-        u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
-        u8g2.drawUTF8(20, 35, "[X] TỪ CHỐI");
+        u8g2.setFont(u8g2_font_6x12_tr);
+        u8g2.drawUTF8(20, 35, "Student: Not in list");
         u8g2.sendBuffer();
         
         buzzerMgr.beepError(); // Bíp, bíp, bíp (lỗi)

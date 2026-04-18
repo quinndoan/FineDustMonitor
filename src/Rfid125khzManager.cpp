@@ -50,10 +50,12 @@ void rfid_update() {
       continue;
     }
 
-    // Một số module trả dữ liệu theo dòng thay vì STX/ETX
+    // Một số module trả dữ liệu theo dòng thay vì STX/ETX.
+    // Nếu đang ở trong STX/ETX frame thì KHÔNG finalize theo CR/LF.
     if (c == '\n' || c == '\r') {
-      finishTagIfValid();
-      rfidInFrame = false;
+      if (!rfidInFrame) {
+        finishTagIfValid();
+      }
       continue;
     }
 
