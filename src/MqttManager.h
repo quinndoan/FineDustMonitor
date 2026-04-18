@@ -63,6 +63,7 @@ public:
      */
     void loop();
     bool connected();
+    void disconnect();
 
     // Hàm gốc điều phối gửi tin
     bool publish(const uint8_t *payload, size_t length, bool retained = true);
@@ -81,6 +82,9 @@ public:
     void publishBin(float v1, float v2);
     void publishBin(float v1, float v2, float v3, float v4);
 };
+
+void WakeupMQTT();
+void ShutdownMQTT();
 
 extern MqttManager mqttMgr;
 

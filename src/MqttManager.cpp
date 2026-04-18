@@ -7,6 +7,17 @@ unsigned long lastStartupAttempt = 0;
 
 MqttManager::MqttManager() : client(espClient) {}
 
+bool MqttManager::connected() {
+    return client.connected();
+}
+
+void MqttManager::disconnect() {
+    if (client.connected()) {
+        client.disconnect();
+    }
+    lastReconnectAttemptStatus = false;
+}
+
 
 /**
  * @brief Gửi thông tin định danh hệ thống khi mới khởi động
@@ -117,6 +128,24 @@ void MqttManager::loop() {
     } else {
         client.loop();
     }
+}
+
+void WakeupMQTT()
+{
+    configMgr.setMqttEnabled(true);
+
+    if (WiFi.isConnected() && mqttMgr.setup()) {
+        Serial.println(F("[MQTT] Wakeup successful."));
+    } else {
+        Serial.println(F("[MQTT] Wakeup requested, reconnect will continue in loop()."));
+    }
+}
+
+void ShutdownMQTT()
+{
+    Serial.println(F("[MQTT] Shutting down MQTT..."));
+    mqttMgr.disconnect();
+    configMgr.setMqttEnabled(false);
 }
 
 

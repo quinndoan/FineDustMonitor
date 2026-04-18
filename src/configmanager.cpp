@@ -52,6 +52,11 @@ void ConfigManager::setWifiEnabled(bool enabled) {
     writeFile(FILE_WIFI_ENABLE, enabled ? "1" : "0");
 }
 
+void ConfigManager::setMqttEnabled(bool enabled) {
+    params.mqttEnabled = enabled;
+    writeFile(FILE_MQTT_ENABLE, enabled ? "1" : "0");
+}
+
 void ConfigManager::setWiFiConfig(String ssid, String pass) {
     params.ssid = ssid;
     params.password = pass;

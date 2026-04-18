@@ -90,6 +90,118 @@ char g_mode;
 uint8_t settingCursorIndex = 0; 
 #define MAX_SETTINGS_ITEM 2
 
+static String urlDecode(const String& encoded) {
+  String out;
+  out.reserve(encoded.length());
+
+  for (size_t i = 0; i < encoded.length(); i++) {
+    const char c = encoded.charAt(i);
+    if (c == '%' && (i + 2) < encoded.length()) {
+      const char h1 = encoded.charAt(i + 1);
+      const char h2 = encoded.charAt(i + 2);
+
+      auto hexVal = [](char x) -> int {
+        if (x >= '0' && x <= '9') return x - '0';
+        if (x >= 'A' && x <= 'F') return x - 'A' + 10;
+        if (x >= 'a' && x <= 'f') return x - 'a' + 10;
+        return -1;
+      };
+
+      const int v1 = hexVal(h1);
+      const int v2 = hexVal(h2);
+      if (v1 >= 0 && v2 >= 0) {
+        out += (char)((v1 << 4) | v2);
+        i += 2;
+        continue;
+      }
+    }
+
+    out += (c == '+') ? ' ' : c;
+  }
+
+  return out;
+}
+
+static String jsonEscape(const String& input) {
+  String out;
+  out.reserve(input.length() + 8);
+
+  for (size_t i = 0; i < input.length(); i++) {
+    const char c = input.charAt(i);
+    if (c == '"' || c == '\\') {
+      out += '\\';
+      out += c;
+    } else {
+      out += c;
+    }
+  }
+
+  return out;
+}
+
+static bool parseHustCardUrl(const String& qrPayload, String& studentIdOut, String& fullNameOut) {
+  const String marker = "https://ctsv.hust.edu.vn/#/card/";
+  if (!qrPayload.startsWith(marker)) return false;
+
+  String tail = qrPayload.substring(marker.length());
+  tail.trim();
+
+  const int firstSlash = tail.indexOf('/');
+  if (firstSlash <= 0) return false;
+
+  String studentId = tail.substring(0, firstSlash);
+  String fullNameRaw = tail.substring(firstSlash + 1);
+
+  // Chỉ lấy phần tên, bỏ các token hoặc query phía sau nếu có.
+  const int nextSlash = fullNameRaw.indexOf('/');
+  if (nextSlash >= 0) {
+    fullNameRaw = fullNameRaw.substring(0, nextSlash);
+  }
+  const int queryPos = fullNameRaw.indexOf('?');
+  if (queryPos >= 0) {
+    fullNameRaw = fullNameRaw.substring(0, queryPos);
+  }
+
+  studentId = urlDecode(studentId);
+  fullNameRaw = urlDecode(fullNameRaw);
+  fullNameRaw.replace("_", " ");
+
+  studentId.trim();
+  fullNameRaw.trim();
+
+  if (studentId.length() == 0 || fullNameRaw.length() == 0) {
+    return false;
+  }
+
+  // MSSV HUST thường là dãy số, kiểm tra để tránh nhận nhầm QR URL khác.
+  for (size_t i = 0; i < studentId.length(); i++) {
+    if (!isDigit(studentId.charAt(i))) return false;
+  }
+
+  studentIdOut = studentId;
+  fullNameOut = fullNameRaw;
+  return true;
+}
+
+static bool parseHustCardUrlToJson(const String& qrPayload, String& jsonOut) {
+  String studentId;
+  String fullName;
+  if (!parseHustCardUrl(qrPayload, studentId, fullName)) return false;
+
+  const String studentIdEsc = jsonEscape(studentId);
+  const String fullNameEsc = jsonEscape(fullName);
+  const String rawUrlEsc = jsonEscape(qrPayload);
+
+  jsonOut = "{";
+  jsonOut += "\"type\":\"hust_card\",";
+  jsonOut += "\"student_id\":\"" + studentIdEsc + "\",";
+  jsonOut += "\"full_name\":\"" + fullNameEsc + "\",";
+  jsonOut += "\"raw_url\":\"" + rawUrlEsc + "\"";
+  jsonOut += "}";
+
+  return true;
+}
+
 
 
 // --------------------------------------------------------
@@ -256,6 +368,35 @@ void handleCardCheck(String tag, const char* logPrefix) {
     // nfc_clear_rx();
 }
 
+void handleQrCardCheck(const String& qrPayload) {
+    String studentId;
+    String studentName;
+    if (!parseHustCardUrl(qrPayload, studentId, studentName)) {
+      Serial.print("[QR/UART][RAW] ");
+      Serial.println(qrPayload);
+      return;
+    }
+
+    buzzerMgr.beepShort();
+
+    String parsedJson;
+    parseHustCardUrlToJson(qrPayload, parsedJson);
+    Serial.print("[QR/UART][JSON] ");
+    Serial.println(parsedJson);
+
+    mqttMgr.publishString(parsedJson);
+
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
+    u8g2.drawUTF8(5, 20, "Vao cua: OK");
+    drawVietnameseName(u8g2, studentName);
+    u8g2.sendBuffer();
+
+    buzzerMgr.beepOk();
+    delay(2000);
+    renderCurrentMode();
+}
+
 void loop()
 {
 
@@ -296,10 +437,13 @@ void loop()
             configMgr.params.wifiEnabled = !configMgr.params.wifiEnabled; 
             if (!configMgr.params.wifiEnabled) ShutdownWiFi(); else WakeupWiFi();
         } else if (settingCursorIndex == 1) {
-            configMgr.params.mqttEnabled = !configMgr.params.mqttEnabled;
+          if (configMgr.params.mqttEnabled) {
+            ShutdownMQTT();
+          } else {
+            WakeupMQTT();
+          }
         }
-        
-        configMgr.saveAll();  // Quan trọng: Lưu trực tiếp cấu hình xuống Flash
+
         buzzerMgr.beepShort(); // Kêu 1 tiếng báo hiệu đã lưu 
         renderCurrentMode();  // Vẽ lại OLED (Để ON đổi thành OFF)
         

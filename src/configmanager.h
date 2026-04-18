@@ -30,6 +30,7 @@ public:
 
     // Các hàm cập nhật từng thành phần và lưu ngay
     void setWifiEnabled(bool enabled);
+    void setMqttEnabled(bool enabled);
     void setWiFiConfig(String ssid, String pass);
     void setDeviceID(String id);
 
