@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, Edit2, Trash2, Search, Loader2, Users } from 'lucide-react'
 import StudentFormModal from '../components/student-form-modal'
+import { ToastContainer } from '../components/toast-notification'
 import './student-management-page.css'
 
 const API_URL = 'http://localhost:8000/api/students'
@@ -16,6 +17,18 @@ function StudentManagementPage() {
   const [editingMssv, setEditingMssv] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [formData, setFormData] = useState({ mssv: '', rfid: '', name: '' })
+  const [toasts, setToasts] = useState([])
+
+  /** Add a toast message */
+  const addToast = useCallback((message, type = 'success') => {
+    const id = Date.now()
+    setToasts((prev) => [...prev, { id, message, type }])
+  }, [])
+
+  /** Remove a toast by id */
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id))
+  }, [])
 
   useEffect(() => {
     fetchStudents()
@@ -51,34 +64,51 @@ function StudentManagementPage() {
 
   const handleSubmit = async () => {
     try {
+      let res
       if (editingMssv) {
-        await fetch(`${API_URL}/${editingMssv}`, {
+        res = await fetch(`${API_URL}/${editingMssv}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ rfid: formData.rfid, name: formData.name }),
         })
       } else {
-        await fetch(API_URL, {
+        res = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData),
         })
       }
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null)
+        const detail = errData?.detail || `Lỗi server (${res.status})`
+        addToast(detail, 'error')
+        return
+      }
+
       setIsModalOpen(false)
+      addToast(editingMssv ? 'Cập nhật sinh viên thành công!' : 'Thêm sinh viên thành công!', 'success')
       fetchStudents()
     } catch (err) {
       console.error('Submit error:', err)
-      alert('Lỗi: có thể bị trùng MSSV hoặc server chưa bật!')
+      addToast('Không thể kết nối đến server. Vui lòng kiểm tra lại!', 'error')
     }
   }
 
   const handleDelete = async (mssv) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa sinh viên này?')) return
     try {
-      await fetch(`${API_URL}/${mssv}`, { method: 'DELETE' })
+      const res = await fetch(`${API_URL}/${mssv}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null)
+        addToast(errData?.detail || `Xóa thất bại (${res.status})`, 'error')
+        return
+      }
+      addToast('Đã xóa sinh viên thành công!', 'success')
       fetchStudents()
     } catch (err) {
       console.error('Delete error:', err)
+      addToast('Không thể kết nối đến server!', 'error')
     }
   }
 
@@ -180,6 +210,8 @@ function StudentManagementPage() {
         onChange={handleChange}
         isEditing={!!editingMssv}
       />
+
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   )
 }

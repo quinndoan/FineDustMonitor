@@ -88,6 +88,9 @@ def add_student(student: Student) -> dict[str, Any]:
 	idx = sheet_service.find_row_index_by_mssv("Students", student.mssv)
 	if idx is not None:
 		raise HTTPException(status_code=400, detail="Sinh viên với MSSV này đã tồn tại.")
+	rfid_idx = sheet_service.find_row_index_by_rfid("Students", student.rfid)
+	if rfid_idx is not None:
+		raise HTTPException(status_code=400, detail="Mã thẻ RFID này đã được sử dụng bởi sinh viên khác.")
 	try:
 		sheet_service.append_row("Students", [student.mssv, student.rfid, student.name])
 		return {"success": True, "message": "Thêm sinh viên thành công"}
@@ -105,8 +108,15 @@ def update_student(mssv: str, data: StudentUpdate) -> dict[str, Any]:
 		existing_row.extend([""] * (3 - len(existing_row)))
 		new_rfid = data.rfid if data.rfid is not None else existing_row[1]
 		new_name = data.name if data.name is not None else existing_row[2]
+		# Check RFID not used by another student
+		if new_rfid != existing_row[1]:
+			rfid_idx = sheet_service.find_row_index_by_rfid("Students", new_rfid)
+			if rfid_idx is not None:
+				raise HTTPException(status_code=400, detail="Mã thẻ RFID này đã được sử dụng bởi sinh viên khác.")
 		sheet_service.update_row("Students", idx, [mssv, new_rfid, new_name])
 		return {"success": True, "message": "Cập nhật sinh viên thành công"}
+	except HTTPException:
+		raise
 	except Exception as exc:
 		raise HTTPException(status_code=500, detail=str(exc))
 

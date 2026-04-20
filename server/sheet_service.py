@@ -39,6 +39,15 @@ class InMemorySheetService:
 				return i + 1
 		return None
 
+	def find_row_index_by_rfid(self, sheet_name: str, rfid: str) -> int | None:
+		if sheet_name not in self._storage:
+			return None
+		rows = self._storage[sheet_name]
+		for i, row in enumerate(rows):
+			if len(row) > 1 and row[1] == rfid:
+				return i + 1
+		return None
+
 	def update_row(self, sheet_name: str, row_index: int, row_data: list[str]) -> None:
 		if sheet_name in self._storage and 1 <= row_index <= len(self._storage[sheet_name]):
 			self._storage[sheet_name][row_index - 1] = row_data
@@ -143,6 +152,17 @@ class GoogleSheetsService:
 			return None
 		except Exception as exc:
 			print(f"Error in find_row_index: {exc}")
+			return None
+
+	def find_row_index_by_rfid(self, sheet_name: str, rfid: str) -> int | None:
+		try:
+			rows = self.read_rows(sheet_name)
+			for i, row in enumerate(rows):
+				if len(row) > 1 and row[1] == str(rfid):
+					return i + 1
+			return None
+		except Exception as exc:
+			print(f"Error in find_row_index_by_rfid: {exc}")
 			return None
 
 	def _get_sheet_id(self, sheet_name: str) -> int:
