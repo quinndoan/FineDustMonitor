@@ -1,0 +1,210 @@
+/* ===== Student Management Page ===== */
+
+.students-page {
+  animation: pageIn 0.3s ease;
+}
+
+.students-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.btn-add {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.25rem;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+}
+
+.btn-add:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+}
+
+/* --- Search --- */
+.search-bar {
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #475569;
+  pointer-events: none;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 0.75rem 0.75rem 0.75rem 2.75rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  color: #f1f5f9;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+  transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+}
+
+.search-bar input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.search-bar input::placeholder {
+  color: #475569;
+}
+
+/* --- Table Card --- */
+.table-card {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.table-card table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-card th,
+.table-card td {
+  padding: 0.85rem 1.25rem;
+  text-align: left;
+}
+
+.table-card th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.table-card td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.table-card tr:last-child td {
+  border-bottom: none;
+}
+
+.table-card tbody tr {
+  transition: background 0.15s;
+}
+
+.table-card tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.row-num {
+  color: #475569;
+  font-size: 0.8rem;
+}
+
+.mssv-cell {
+  font-weight: 600;
+  color: #e2e8f0 !important;
+}
+
+.rfid-cell {
+  font-family: ui-monospace, Consolas, monospace;
+  color: #64748b !important;
+  font-size: 0.85rem;
+}
+
+/* --- Row Actions --- */
+.row-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.icon-btn.edit {
+  color: #64748b;
+}
+
+.icon-btn.edit:hover {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+}
+
+.icon-btn.delete {
+  color: #64748b;
+}
+
+.icon-btn.delete:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+/* --- Loading & Empty States --- */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem;
+  color: #64748b;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.empty-state {
+  text-align: center !important;
+  padding: 3rem !important;
+  color: #475569 !important;
+}
+
+.empty-state span {
+  display: block;
+  margin-top: 0.5rem;
+}
+
+/* --- Animation --- */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
