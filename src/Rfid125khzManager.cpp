@@ -81,3 +81,16 @@ String rfid_get_last_tag() {
   if (lastTagTime == 0) lastTagTime = 1; // Đảm bảo khác 0
   return tag;
 }
+
+void rfid_flush() {
+  // Xả toàn bộ dữ liệu còn trong bộ đệm Serial2 (tránh đọc lại tag cũ)
+  while (Serial2.available() > 0) {
+    Serial2.read();
+  }
+  rfidBuffer = "";
+  rfidTagReady = false;
+  rfidInFrame = false;
+  // Reset cooldown về thời điểm hiện tại để đảm bảo chờ đủ 2s kể từ BÂY GIỜ
+  lastTagTime = millis();
+  if (lastTagTime == 0) lastTagTime = 1;
+}

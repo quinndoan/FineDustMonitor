@@ -21,3 +21,6 @@ bool rfid_has_new_tag();
 
 // Lấy nội dung thẻ vừa đọc (chuỗi ASCII, ví dụ mã HEX), đồng thời clear cờ new_tag
 String rfid_get_last_tag();
+
+// Xả bộ đệm Serial2 và reset cooldown — gọi SAU KHI xử lý thẻ xong
+void rfid_flush();

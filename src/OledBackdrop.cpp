@@ -201,39 +201,45 @@ void showMqttConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2) {
   u8g2.sendBuffer();
 }
 
-// Hàm hỗ trợ tự động cắt tên Tiếng Việt (có dấu) thành 2 dòng chữ to nếu quá
-// dài
-void drawVietnameseName(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2,
-                        String studentName) {
-  u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
+// Phiên bản nhỏ gọn — dùng font ASCII 5x8 (U8g2 không có font Vietnamese < 16px)
+void drawVietnameseNameCompact(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2,
+                               String studentName) {
+  u8g2.setFont(u8g2_font_unifont_t_vietnamese1);
 
-  // Tìm dấu cách (space) gần giữa chuỗi để ngắt dòng
-  int splitIdx = -1;
-  int mid = studentName.length() / 2;
-  for (int i = mid; i < studentName.length(); i++) {
-    if (studentName[i] == ' ') {
-      splitIdx = i;
-      break;
-    }
-  }
-  if (splitIdx == -1) {
-    for (int i = mid; i >= 0; i--) {
+  // Tính xem chuỗi có vừa 1 dòng (~21 ký tự với font 6px) không
+  const int maxCharsPerLine = 20;
+
+  if ((int)studentName.length() <= maxCharsPerLine) {
+    // Vừa 1 dòng
+    u8g2.drawUTF8(5, 40, studentName.c_str());
+  } else {
+    // Tìm dấu cách gần giữa chuỗi để ngắt dòng
+    int splitIdx = -1;
+    int mid = studentName.length() / 2;
+    for (int i = mid; i < (int)studentName.length(); i++) {
       if (studentName[i] == ' ') {
         splitIdx = i;
         break;
       }
     }
-  }
+    if (splitIdx == -1) {
+      for (int i = mid; i >= 0; i--) {
+        if (studentName[i] == ' ') {
+          splitIdx = i;
+          break;
+        }
+      }
+    }
 
-  // Tiếng việt Unicode độ dài thực tế lớn hơn số lượng chữ, nên string dài > 16
-  // byte thường sẽ bị tràn 128px
-  if (studentName.length() >= 16 && splitIdx != -1) {
-    String l1 = studentName.substring(0, splitIdx);
-    String l2 = studentName.substring(splitIdx + 1);
-    u8g2.drawUTF8(5, 42, l1.c_str());
-    u8g2.drawUTF8(5, 60, l2.c_str());
-  } else {
-    u8g2.drawUTF8(5, 50, studentName.c_str());
+    if (splitIdx != -1) {
+      String l1 = studentName.substring(0, splitIdx);
+      String l2 = studentName.substring(splitIdx + 1);
+      u8g2.drawUTF8(5, 40, l1.c_str());
+      u8g2.drawUTF8(5, 52, l2.c_str());
+    } else {
+      // Không tìm được chỗ cắt → in 1 dòng cắt bớt
+      u8g2.drawUTF8(5, 40, studentName.c_str());
+    }
   }
 }
 

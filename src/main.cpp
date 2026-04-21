@@ -1,76 +1,78 @@
 // Arduino core
 #include <Arduino.h>
- 
- // Hardware configuration MUST be included first
+
+// Hardware configuration MUST be included first
 #include "HardwareConfig.h"
- // Core modules (always included)
-#include "ConfigManager.h"  // Cấu hình ghi bộ nhớ Flash
+// Core modules (always included)
 #include "ApiManager.h"    // Request HTTPS kiểm tra MSSV với Google Sheet
-#include "main.h"           // Thông tin dev
- 
- // Display module
+#include "ConfigManager.h" // Cấu hình ghi bộ nhớ Flash
+#include "main.h"          // Thông tin dev
+
+// Display module
 #if ENABLE_OLED_DISPLAY
 
 // Màn hình và I2C
+#include "OledBackdrop.h" // Giao diện chào trên màn hình điện tử
 #include <U8g2lib.h>
 #include <Wire.h>
-#include "OledBackdrop.h"   // Giao diện chào trên màn hình điện tử
+
 #endif
- 
- // Communication modules
+
+// Communication modules
 #if ENABLE_WIFI
-#include "WifiManager.h"    // Quản lý wifi
+#include "WifiManager.h" // Quản lý wifi
 #endif
- 
+
 #if ENABLE_MQTT
-#include "MqttManager.h"    // Gửi dữ liệu lên MQTT mặc định mqtt.toolhub.app
+#include "MqttManager.h" // Gửi dữ liệu lên MQTT mặc định mqtt.toolhub.app
 #endif
- 
- // Input modules
+
+// Input modules
 #if ENABLE_CONFIG_BUTTON
 #include "ButtonGestures.h" // Quản lý các hình thái bấm của 1 nút button
 #endif
- 
- // Output modules
+
+// Output modules
 #if ENABLE_BUZZER
 #include "BuzzerManager.h" // Quản lý Loa Buzzer
 #endif
- 
- // RFID/NFC modules
+
+// RFID/NFC modules
 #if ENABLE_RFID_125KHZ
-#include "Rfid125khzManager.h"   // Quản lý RFID 125kHz
-#endif
- 
-#if ENABLE_NFC_MFRC522
-#include "NfcManager.h"    // Quản lý MFRC522 13.56MHz
+#include "Rfid125khzManager.h" // Quản lý RFID 125kHz
 #endif
 
-#include "WifiManager.h"    // Quản lý wifi
-#include "OledBackdrop.h"   // Giao diện chào trên màn hình điện tử
-#include "ButtonGestures.h" // Quản lý các hình thái bấm của 1 nút button
-#include "MqttManager.h"    // Gửi dữ liệu lên MQTT mặc định mqtt.toolhub.app
-#include "main.h"           // Thông tin dev
-#include "Rfid125khzManager.h"   // Quản lý RFID 125kHz
-#include "BuzzerManager.h" // Quản lý Loa Buzzer
-#include "ApiManager.h"    // Request HTTPS kiểm tra MSSV với Google Sheet
-#include "NfcManager.h"    // Quản lý MFRC522 13.56MHz
-#include "QrManager.h"     // Quản lý QR scanner qua UART
+#if ENABLE_NFC_MFRC522
+#include "NfcManager.h" // Quản lý MFRC522 13.56MHz
+#endif
+
+#include "ApiManager.h"        // Request HTTPS kiểm tra MSSV với Google Sheet
+#include "ButtonGestures.h"    // Quản lý các hình thái bấm của 1 nút button
+#include "BuzzerManager.h"     // Quản lý Loa Buzzer
+#include "MqttManager.h"       // Gửi dữ liệu lên MQTT mặc định mqtt.toolhub.app
+#include "NfcManager.h"        // Quản lý MFRC522 13.56MHz
+#include "OledBackdrop.h"      // Giao diện chào trên màn hình điện tử
+#include "QrManager.h"         // Quản lý QR scanner qua UART
+#include "Rfid125khzManager.h" // Quản lý RFID 125kHz
+#include "WifiManager.h"       // Quản lý wifi
+#include "main.h"              // Thông tin dev
+
 
 // --- KHÔNG CÒN SỬ DỤNG MODULE BỤI SDS011 ---
 
- // LED status indicator
- // LED_BUILTIN is defined in HardwareConfig.h
- 
- // --- GLOBAL OBJECTS (conditionally defined based on features) ---
- 
- // OLED Display
+// LED status indicator
+// LED_BUILTIN is defined in HardwareConfig.h
+
+// --- GLOBAL OBJECTS (conditionally defined based on features) ---
+
+// OLED Display
 #if ENABLE_OLED_DISPLAY
- U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
+U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 #endif
- 
- // Configuration button
+
+// Configuration button
 #if ENABLE_CONFIG_BUTTON
- ButtonGesture configBtn(CFG_BUTTON);
+ButtonGesture configBtn(CFG_BUTTON);
 #endif
 
 // Chọn tên font mới
@@ -87,10 +89,10 @@
 #define MODE_NUM 6
 char g_mode;
 
-uint8_t settingCursorIndex = 0; 
+uint8_t settingCursorIndex = 0;
 #define MAX_SETTINGS_ITEM 2
 
-static String urlDecode(const String& encoded) {
+static String urlDecode(const String &encoded) {
   String out;
   out.reserve(encoded.length());
 
@@ -101,9 +103,12 @@ static String urlDecode(const String& encoded) {
       const char h2 = encoded.charAt(i + 2);
 
       auto hexVal = [](char x) -> int {
-        if (x >= '0' && x <= '9') return x - '0';
-        if (x >= 'A' && x <= 'F') return x - 'A' + 10;
-        if (x >= 'a' && x <= 'f') return x - 'a' + 10;
+        if (x >= '0' && x <= '9')
+          return x - '0';
+        if (x >= 'A' && x <= 'F')
+          return x - 'A' + 10;
+        if (x >= 'a' && x <= 'f')
+          return x - 'a' + 10;
         return -1;
       };
 
@@ -122,7 +127,7 @@ static String urlDecode(const String& encoded) {
   return out;
 }
 
-static String jsonEscape(const String& input) {
+static String jsonEscape(const String &input) {
   String out;
   out.reserve(input.length() + 8);
 
@@ -139,15 +144,18 @@ static String jsonEscape(const String& input) {
   return out;
 }
 
-static bool parseHustCardUrl(const String& qrPayload, String& studentIdOut, String& fullNameOut) {
+static bool parseHustCardUrl(const String &qrPayload, String &studentIdOut,
+                             String &fullNameOut) {
   const String marker = "https://ctsv.hust.edu.vn/#/card/";
-  if (!qrPayload.startsWith(marker)) return false;
+  if (!qrPayload.startsWith(marker))
+    return false;
 
   String tail = qrPayload.substring(marker.length());
   tail.trim();
 
   const int firstSlash = tail.indexOf('/');
-  if (firstSlash <= 0) return false;
+  if (firstSlash <= 0)
+    return false;
 
   String studentId = tail.substring(0, firstSlash);
   String fullNameRaw = tail.substring(firstSlash + 1);
@@ -175,7 +183,8 @@ static bool parseHustCardUrl(const String& qrPayload, String& studentIdOut, Stri
 
   // MSSV HUST thường là dãy số, kiểm tra để tránh nhận nhầm QR URL khác.
   for (size_t i = 0; i < studentId.length(); i++) {
-    if (!isDigit(studentId.charAt(i))) return false;
+    if (!isDigit(studentId.charAt(i)))
+      return false;
   }
 
   studentIdOut = studentId;
@@ -183,10 +192,11 @@ static bool parseHustCardUrl(const String& qrPayload, String& studentIdOut, Stri
   return true;
 }
 
-static bool parseHustCardUrlToJson(const String& qrPayload, String& jsonOut) {
+static bool parseHustCardUrlToJson(const String &qrPayload, String &jsonOut) {
   String studentId;
   String fullName;
-  if (!parseHustCardUrl(qrPayload, studentId, fullName)) return false;
+  if (!parseHustCardUrl(qrPayload, studentId, fullName))
+    return false;
 
   const String studentIdEsc = jsonEscape(studentId);
   const String fullNameEsc = jsonEscape(fullName);
@@ -202,13 +212,10 @@ static bool parseHustCardUrlToJson(const String& qrPayload, String& jsonOut) {
   return true;
 }
 
-
-
 // --------------------------------------------------------
 // CÁC HÀM HIỂN THỊ TRỐNG CHỜ TÍCH HỢP MODULE MỚI
 // --------------------------------------------------------
-void displayData()
-{
+void displayData() {
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
   u8g2.drawUTF8(5, 30, "Màn hình 1:");
@@ -216,8 +223,7 @@ void displayData()
   u8g2.sendBuffer();
 }
 
-void plotData()
-{
+void plotData() {
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
   u8g2.drawUTF8(5, 30, "Màn hình 2:");
@@ -225,8 +231,7 @@ void plotData()
   u8g2.sendBuffer();
 }
 
-void displayLevel()
-{
+void displayLevel() {
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
   u8g2.drawUTF8(5, 30, "Màn hình 3:");
@@ -237,16 +242,15 @@ void displayLevel()
 // --------------------------------------------------------
 // HÀM CHÍNH: setup()
 // --------------------------------------------------------
-void setup()
-{
+void setup() {
   // 1. Serial MẶC ĐỊNH (cho Debug/PC)
   Serial.begin(115200);
   Serial.println("\nStart Monitor Student Device...");
 
   // 2. Lấy cấu hình từ Flash
-  if (configMgr.begin())
-  {
-    configMgr.loadAll(); // Toàn bộ thông số từ LittleFS đã nằm trong configMgr.params
+  if (configMgr.begin()) {
+    configMgr.loadAll(); // Toàn bộ thông số từ LittleFS đã nằm trong
+                         // configMgr.params
   }
 
   // 3. Cấu hình OSD
@@ -255,8 +259,6 @@ void setup()
 
   // 4. Màn hinh chào
   showWelcomeScreen(u8g2);
-
-
 
   // 6. Led mặc định  LED_BUILTIN = D4
   pinMode(LED_BUILTIN, OUTPUT);
@@ -270,7 +272,7 @@ void setup()
   // 8. Initialize Buzzer
 #if ENABLE_BUZZER
   buzzerMgr.begin();
-  #endif
+#endif
   buzzerMgr.beepShort(); // Còi bíp 1 tiếng báo hiệu boot xong
 
   // 9. Mode hoạt động đầu tiên (vào thẳng trang đo đạc)
@@ -297,14 +299,13 @@ void setup()
   delay(2000);
 }
 
-
-
 // --------------------------------------------------------
 // HÀM CHÍNH: loop()
 // --------------------------------------------------------
 void renderCurrentMode() {
   if (g_mode == MODE_INFO) {
-    showFlashConfig(u8g2, (mqttMgr.isLastConnectionToBrokerOk() ? "MQTT Ok" : "MQTT dis"));
+    showFlashConfig(
+        u8g2, (mqttMgr.isLastConnectionToBrokerOk() ? "MQTT Ok" : "MQTT dis"));
   } else if (g_mode == MODE_IMMEDIATE) {
     displayData();
   } else if (g_mode == MODE_PLOT) {
@@ -318,171 +319,208 @@ void renderCurrentMode() {
   }
 }
 
-void handleCardCheck(String tag, const char* logPrefix) {
-    buzzerMgr.beepShort(); // Bíp ngắn chạm thẻ cực nhạy
-    
-    Serial.print(logPrefix);
-    Serial.print(" Tag UID: ");
-    Serial.println(tag);
+void handleCardCheck(String tag, const char *logPrefix) {
+  buzzerMgr.beepShort(); // Bíp ngắn chạm thẻ cực nhạy
 
-    // Gửi chung gói dữ liệu về server qua trường "rfid".
-    // Bạn có thể đổi JSON thành {"nfc":...} nếu muốn phân biệt với 125KHz ở sheet
-    String jsonPayload = "{\"rfid\":\"" + tag + "\"}";
-    mqttMgr.publishString(jsonPayload);
+  Serial.print(logPrefix);
+  Serial.print(" Tag UID: ");
+  Serial.println(tag);
 
-    // --- BƯỚC 4: GỌI API KIỂM TRA HỢP LỆ VÀ XUẤT LÊN MÀN HÌNH ---
-    u8g2.clearBuffer();
-    u8g2.setFont(u8g2_font_8x13B_tr);
-    u8g2.drawUTF8(5, 20, "Processing...");
-    u8g2.sendBuffer();
-    
-    // Yêu cầu API quét (mất ~1-2s)
-    String studentId;
-    String studentName;
-    bool isAccepted = apiMgr.verifyStudent(tag, true, studentId, studentName);
-    
-    u8g2.clearBuffer();
-    if(isAccepted) {
-        // HỢP LỆ
-        u8g2.setFont(u8g2_font_7x14B_tr);
-        u8g2.drawUTF8(5, 20, "Student: Accepted");
-        
-      if (studentId.length() > 0) {
-        Serial.print("[API] Student ID: ");
-        Serial.println(studentId);
+  // Gửi chung gói dữ liệu về server qua trường "rfid".
+  // Bạn có thể đổi JSON thành {"nfc":...} nếu muốn phân biệt với 125KHz ở sheet
+  String jsonPayload = "{\"rfid\":\"" + tag + "\"}";
+  mqttMgr.publishString(jsonPayload);
 
-        u8g2.drawUTF8(5, 34, ("MSSV: " + studentId).c_str());
-      }
+  // --- BƯỚC 4: GỌI API KIỂM TRA HỢP LỆ VÀ XUẤT LÊN MÀN HÌNH ---
+  u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_8x13B_tr);
+  u8g2.drawUTF8(5, 20, "Processing...");
+  u8g2.sendBuffer();
 
-        // Vẽ tên tiếng Việt có dấu to rõ với tính năng chia dòng
-      drawVietnameseName(u8g2, studentName);
-        
-        u8g2.sendBuffer();
-        
-        buzzerMgr.beepOk(); // Bíp dài
-    } else {
-        // TỪ CHỐI
-        u8g2.setFont(u8g2_font_6x12_tr);
-        u8g2.drawUTF8(20, 35, "Student: Not in list");
-        u8g2.sendBuffer();
-        
-        buzzerMgr.beepError(); // Bíp, bíp, bíp (lỗi)
+  // Yêu cầu API quét (mất ~1-2s)
+  String studentId;
+  String studentName;
+  bool isAccepted = apiMgr.verifyStudent(tag, true, studentId, studentName);
+
+  u8g2.clearBuffer();
+  if (isAccepted) {
+    // HỢP LỆ — dùng font nhỏ để vừa 3 dòng trên 64px
+    u8g2.setFont(u8g2_font_6x12_tr);
+    u8g2.drawUTF8(5, 10, "Student: Accepted");
+
+    if (studentId.length() > 0) {
+      Serial.print("[API] Student ID: ");
+      Serial.println(studentId);
+
+      u8g2.drawUTF8(5, 22, ("MSSV: " + studentId).c_str());
     }
 
-    delay(2000);
-    renderCurrentMode(); // Phục hồi trang cũ
-    
-    // Xóa bộ đệm và reset cooldown của các module tránh bị bắt trùng thẻ cũ lưu trong RX
-    // rfid_clear_rx();
-    // nfc_clear_rx();
+    // Vẽ tên tiếng Việt có dấu — font nhỏ hơn, bắt đầu từ Y=36
+    drawVietnameseNameCompact(u8g2, studentName);
+
+    u8g2.sendBuffer();
+
+    buzzerMgr.beepOk(); // Bíp dài
+  } else {
+    // TỪ CHỐI
+    u8g2.setFont(u8g2_font_7x14B_tr);
+    u8g2.drawUTF8(15, 35, "Student Denied");
+    u8g2.sendBuffer();
+
+    buzzerMgr.beepError(); // Bíp, bíp, bíp (lỗi)
+  }
+
+  delay(2000);
+  renderCurrentMode(); // Phục hồi trang cũ
+
+  // Xóa bộ đệm và reset cooldown của các module tránh bị bắt trùng thẻ cũ lưu
+  // trong RX rfid_clear_rx(); nfc_clear_rx();
 }
 
-void handleQrCardCheck(const String& qrPayload) {
-    String studentId;
-    String studentName;
-    if (!parseHustCardUrl(qrPayload, studentId, studentName)) {
-      Serial.print("[QR/UART][RAW] ");
-      Serial.println(qrPayload);
-      return;
+void handleQrCardCheck(const String &qrPayload) {
+  // Bước 1: Parse URL thẻ HUST để lấy MSSV
+  String parsedStudentId;
+  String parsedName;
+  if (!parseHustCardUrl(qrPayload, parsedStudentId, parsedName)) {
+    Serial.print("[QR/UART] QR không phải thẻ HUST: ");
+    Serial.println(qrPayload);
+    return;
+  }
+
+  buzzerMgr.beepShort();
+  Serial.print("[QR/UART] Parsed MSSV: ");
+  Serial.print(parsedStudentId);
+  Serial.print(" Name: ");
+  Serial.println(parsedName);
+
+  // Bước 2: Gửi JSON lên MQTT
+  String parsedJson;
+  parseHustCardUrlToJson(qrPayload, parsedJson);
+  mqttMgr.publishString(parsedJson);
+
+  // Bước 3: Hiển thị Processing trên OLED
+  u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_8x13B_tr);
+  u8g2.drawUTF8(5, 20, "Processing...");
+  u8g2.sendBuffer();
+
+  // Bước 4: Gọi API Google Sheet để xác minh (dùng type=qr, data=MSSV)
+  String studentId;
+  String studentName;
+  bool isAccepted =
+      apiMgr.verifyStudent(parsedStudentId, false, studentId, studentName);
+
+  // Bước 5: Hiển thị kết quả lên OLED
+  u8g2.clearBuffer();
+  if (isAccepted) {
+    u8g2.setFont(u8g2_font_6x12_tr);
+    u8g2.drawUTF8(5, 10, "Student: Accepted");
+
+    // Ưu tiên MSSV từ API, fallback về parsed từ URL
+    const String &displayId =
+        (studentId.length() > 0) ? studentId : parsedStudentId;
+    if (displayId.length() > 0) {
+      Serial.print("[API] Student ID: ");
+      Serial.println(displayId);
+      u8g2.drawUTF8(5, 22, ("MSSV: " + displayId).c_str());
     }
 
-    buzzerMgr.beepShort();
+    // Ưu tiên tên từ API, fallback về parsed từ URL
+    const String &displayName =
+        (studentName.length() > 0) ? studentName : parsedName;
+    drawVietnameseNameCompact(u8g2, displayName);
 
-    String parsedJson;
-    parseHustCardUrlToJson(qrPayload, parsedJson);
-    Serial.print("[QR/UART][JSON] ");
-    Serial.println(parsedJson);
-
-    mqttMgr.publishString(parsedJson);
-
-    u8g2.clearBuffer();
-    u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
-    u8g2.drawUTF8(5, 20, "Vao cua: OK");
-    drawVietnameseName(u8g2, studentName);
     u8g2.sendBuffer();
-
     buzzerMgr.beepOk();
-    delay(2000);
-    renderCurrentMode();
+  } else {
+    u8g2.setFont(u8g2_font_7x14B_tr);
+    u8g2.drawUTF8(15, 35, "Student Denied");
+    u8g2.sendBuffer();
+    buzzerMgr.beepError();
+  }
+
+  delay(2000);
+  renderCurrentMode();
 }
 
-void loop()
-{
+void loop() {
 
   // WiFi được duy trì liên tục. Sễ passthough nếu thành công rồi
   CheckAndEstablishWiFiConnection();
   // Duy trì kết nối MQTT
-  if (wifiStatus)
-  {
+  if (wifiStatus) {
     mqttMgr.loop();
+  }
+  
+  // Cập nhật và xử lý dữ liệu từ module QR scanner
+  qr_update();
+  if (qr_has_new_payload()) {
+    const String qrPayload = qr_get_last_payload();
+    if (qrPayload.length() > 0) {
+      handleQrCardCheck(qrPayload);
+    }
   }
 
   // Kiểm tra sự kiện phím bấm
   ButtonEvent evt = configBtn.update();
 
   // Hiển thị Led chỉ thị mặc định theo nút bấm
-  if (evt == SHORT_PRESS)
-  {
+  if (evt == SHORT_PRESS) {
     if (g_mode == MODE_SETTINGS) {
-        // NẾU: Đang ở trang Settings -> Bấm nhanh là XUỐNG DÒNG (Chuyển con trỏ)
-        settingCursorIndex++;
-        if (settingCursorIndex >= MAX_SETTINGS_ITEM) {
-            // Nếu qua hết các tuỳ chọn -> Thoát để đi sang trang (g_mode) tiếp theo
-            settingCursorIndex = 0;
-            g_mode = (g_mode + 1) % MODE_NUM;
-        }
-        renderCurrentMode(); // Vẽ lại menu làm con trỏ nhảy dòng
-    } else {
-        Serial.println("Bam nhanh: Chuyen Mode");
+      // NẾU: Đang ở trang Settings -> Bấm nhanh là XUỐNG DÒNG (Chuyển con trỏ)
+      settingCursorIndex++;
+      if (settingCursorIndex >= MAX_SETTINGS_ITEM) {
+        // Nếu qua hết các tuỳ chọn -> Thoát để đi sang trang (g_mode) tiếp theo
+        settingCursorIndex = 0;
         g_mode = (g_mode + 1) % MODE_NUM;
-        renderCurrentMode();       // Vẽ lại ngay lập tức
+      }
+      renderCurrentMode(); // Vẽ lại menu làm con trỏ nhảy dòng
+    } else {
+      Serial.println("Bam nhanh: Chuyen Mode");
+      g_mode = (g_mode + 1) % MODE_NUM;
+      renderCurrentMode(); // Vẽ lại ngay lập tức
     }
-  }
-  else if (evt == DOUBLE_CLICK)
-  {
+  } else if (evt == DOUBLE_CLICK) {
     if (g_mode == MODE_SETTINGS) {
-        // Bấm đúp tại Settings -> Bật / Tắt giá trị mục đang đứng
-        if (settingCursorIndex == 0) {
-            configMgr.params.wifiEnabled = !configMgr.params.wifiEnabled; 
-            if (!configMgr.params.wifiEnabled) ShutdownWiFi(); else WakeupWiFi();
-        } else if (settingCursorIndex == 1) {
-          if (configMgr.params.mqttEnabled) {
-            ShutdownMQTT();
-          } else {
-            WakeupMQTT();
-          }
+      // Bấm đúp tại Settings -> Bật / Tắt giá trị mục đang đứng
+      if (settingCursorIndex == 0) {
+        configMgr.params.wifiEnabled = !configMgr.params.wifiEnabled;
+        if (!configMgr.params.wifiEnabled)
+          ShutdownWiFi();
+        else
+          WakeupWiFi();
+      } else if (settingCursorIndex == 1) {
+        if (configMgr.params.mqttEnabled) {
+          ShutdownMQTT();
+        } else {
+          WakeupMQTT();
         }
+      }
 
-        buzzerMgr.beepShort(); // Kêu 1 tiếng báo hiệu đã lưu 
-        renderCurrentMode();  // Vẽ lại OLED (Để ON đổi thành OFF)
-        
-    } 
-    else if (g_mode == MODE_INFO)
-    {
-      if (configMgr.params.wifiEnabled)
-      {
+      buzzerMgr.beepShort(); // Kêu 1 tiếng báo hiệu đã lưu
+      renderCurrentMode();   // Vẽ lại OLED (Để ON đổi thành OFF)
+
+    } else if (g_mode == MODE_INFO) {
+      if (configMgr.params.wifiEnabled) {
         Serial.println("Tắt WiFi");
         ShutdownWiFi();
-      }
-      else
-      {
+      } else {
         Serial.println("Bật WiFi");
         WakeupWiFi();
-        // hàm  handleWiFiConnection(); sẽ làm nốt phần việc còn lại ở đầu vòng lắp
+        // hàm  handleWiFiConnection(); sẽ làm nốt phần việc còn lại ở đầu vòng
+        // lắp
       }
     }
-  }
-  else if (evt == LONG_PRESS_2S)
-  {
+  } else if (evt == LONG_PRESS_2S) {
     if (g_mode == MODE_SETTINGS) {
-        // Bấm giữ 2s để thoát nhanh về màn hình chính
-        g_mode = MODE_IMMEDIATE;
-        settingCursorIndex = 0;
-        renderCurrentMode();
+      // Bấm giữ 2s để thoát nhanh về màn hình chính
+      g_mode = MODE_IMMEDIATE;
+      settingCursorIndex = 0;
+      renderCurrentMode();
     } else {
-        Serial.println("Giữ 2s: Đăng kí WiFi");
-        showAPConfig(u8g2);
-        RegisterWiFi(WIFI_REGISTRATION_METHODS::SELF_STATION);
+      Serial.println("Giữ 2s: Đăng kí WiFi");
+      showAPConfig(u8g2);
+      RegisterWiFi(WIFI_REGISTRATION_METHODS::SELF_STATION);
     }
   }
 
@@ -495,21 +533,11 @@ void loop()
   // Nếu vừa đọc được thẻ RFID
   if (rfid_has_new_tag()) {
     handleCardCheck(rfid_get_last_tag(), "[RFID/125kHz]");
+    rfid_flush(); // Xả buffer Serial2 + reset cooldown tránh xử lý trùng
   }
 
   // Nếu vừa đọc được thẻ NFC (Mifare)
   if (nfc_has_new_tag()) {
     handleCardCheck(nfc_get_last_tag(), "[NFC/MFRC522]");
   }
-
-  // Cập nhật dữ liệu từ module QR scanner và chỉ in payload ra terminal
-  qr_update();
-  if (qr_has_new_payload()) {
-    const String qrPayload = qr_get_last_payload();
-    if (qrPayload.length() > 0) {
-      Serial.print("[QR/UART] ");
-      Serial.println(qrPayload);
-    }
-  }
-
 }

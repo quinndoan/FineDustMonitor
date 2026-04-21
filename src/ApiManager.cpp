@@ -12,17 +12,18 @@ static bool extractFieldValue(const String &payload, const char *key, String &va
     const int keyStart = payload.indexOf(keyNeedle);
     if (keyStart < 0) return false;
 
-    int colonStart = payload.indexOf(':', keyStart + keyNeedle.length());
-    if (colonStart < 0) return false;
+    int colonPos = payload.indexOf(':', keyStart + keyNeedle.length());
+    if (colonPos < 0) return false;
 
-    while (colonStart < (int)payload.length() && isspace(static_cast<unsigned char>(payload.charAt(colonStart)))) {
-        colonStart++;
+    // Nhảy qua dấu ':' rồi mới bỏ qua khoảng trắng
+    int valuePos = colonPos + 1;
+    while (valuePos < (int)payload.length() && isspace(static_cast<unsigned char>(payload.charAt(valuePos)))) {
+        valuePos++;
     }
 
-    if (colonStart >= (int)payload.length() || payload.charAt(colonStart) != '"') return false;
+    if (valuePos >= (int)payload.length() || payload.charAt(valuePos) != '"') return false;
 
-    const int start = colonStart;
-    const int valueStart = start + 1;
+    const int valueStart = valuePos + 1;
     const int valueEnd = payload.indexOf('"', valueStart);
     if (valueEnd < 0) return false;
 
@@ -116,6 +117,10 @@ bool ApiManager::verifyStudent(String scannedData, bool isRfid, String &studentI
                     }
                     if (extractFieldValue(payload, "full_name", parsedFullName)) {
                         fullNameOut = parsedFullName;
+                    } else if (extractFieldValue(payload, "name", parsedFullName)) {
+                        fullNameOut = parsedFullName;
+                    } else if (extractFieldValue(payload, "fullName", parsedFullName)) {
+                        fullNameOut = parsedFullName;
                     }
 
                     Serial.print(F("[API] Parsed studentId='"));
@@ -127,6 +132,9 @@ bool ApiManager::verifyStudent(String scannedData, bool isRfid, String &studentI
                     if (fullNameOut.length() > 0 || studentIdOut.length() > 0) {
                         return true;
                     }
+                    
+                    // Nếu là JSON nhưng không chứa thông tin hợp lệ -> Trả về lỗi
+                    return false;
                 }
 
                 if (splitDelimitedResponse(payload, studentIdOut, fullNameOut)) {
