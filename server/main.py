@@ -12,7 +12,7 @@ from schemas import RowItem, Student, StudentUpdate, SheetReadResponse, SheetApp
 from sheet_service import create_sheet_service
 
 app = FastAPI(
-	title="FineDustMonitor Backend",
+	title="Monitor Student Backend",
 	version="0.1.0",
 	description="Simple FastAPI starter for web + Google Sheets management.",
 )
@@ -31,7 +31,7 @@ sheet_service, sheet_service_mode = create_sheet_service()
 @app.get("/")
 def root() -> dict[str, Any]:
 	return {
-		"message": "FineDustMonitor API is running",
+		"message": "Monitor Student API is running",
 		"docs": "/docs",
 		"timestamp": datetime.utcnow().isoformat(),
 	}
