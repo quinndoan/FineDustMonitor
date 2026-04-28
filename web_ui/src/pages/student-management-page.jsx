@@ -127,7 +127,7 @@ function StudentManagementPage() {
   }
 
   const handleSyncSheets = async () => {
-    if (!window.confirm('Đồng bộ sẽ tải danh sách sinh viên mới từ Google Sheets (tab "Students"). Tiếp tục?')) return
+    if (!window.confirm('Đồng bộ sẽ quét tất cả các tab có prefix "SV_" (vd: SV_KHMT, SV_KTMT) từ Google Sheets. Tiếp tục?')) return
     try {
       setIsLoading(true)
       const token = localStorage.getItem('token')

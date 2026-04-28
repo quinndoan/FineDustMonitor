@@ -56,6 +56,10 @@ class InMemorySheetService:
 		if sheet_name in self._storage and 1 <= row_index <= len(self._storage[sheet_name]):
 			self._storage[sheet_name].pop(row_index - 1)
 
+	def list_sheet_names(self) -> list[str]:
+		"""Return all sheet tab names."""
+		return list(self._storage.keys())
+
 
 class GoogleSheetsService:
 	"""
@@ -100,6 +104,17 @@ class GoogleSheetsService:
 			print("✅ Tự động tạo tab 'Students' và Header thành công!")
 		except Exception as exc:
 			print(f"⚠️ Không thể tự động tạo tab 'Students': {exc}")
+
+	def list_sheet_names(self) -> list[str]:
+		"""Return all sheet tab names from the spreadsheet."""
+		try:
+			spreadsheet = self._service.spreadsheets().get(spreadsheetId=self._spreadsheet_id).execute()
+			return [
+				sheet.get("properties", {}).get("title", "")
+				for sheet in spreadsheet.get("sheets", [])
+			]
+		except Exception:
+			return []
 
 	def _sheet_range(self, sheet_name: str) -> str:
 		return f"{sheet_name}!{self._default_range}"

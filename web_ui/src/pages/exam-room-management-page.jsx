@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Edit2, Trash2, Search, Loader2, DoorOpen, Users } from 'lucide-react'
+import { Plus, Edit2, Trash2, Search, Loader2, DoorOpen, Users, CloudDownload } from 'lucide-react'
 import ExamRoomFormModal from '../components/exam-room-form-modal'
 import { ToastContainer } from '../components/toast-notification'
 import './student-management-page.css' // Reusing styles
@@ -135,16 +135,46 @@ function ExamRoomManagementPage() {
     r.subject.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  const handleSyncSheets = async () => {
+    if (!window.confirm('Đồng bộ sẽ quét tất cả tab có prefix "LichThi_" (vd: LichThi_1, LichThi_2) từ Google Sheets. Tiếp tục?')) return
+    try {
+      setIsLoading(true)
+      const token = localStorage.getItem('token')
+      const res = await fetch(`${API_URL}/sync-from-sheets`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        addToast(data?.detail || `Đồng bộ thất bại (${res.status})`, 'error')
+        return
+      }
+      addToast(data.message, 'success')
+      fetchRooms()
+    } catch (err) {
+      console.error('Sync error:', err)
+      addToast('Không thể kết nối đến server!', 'error')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="students-page">
       <div className="page-header students-header">
         <div>
           <h1>Quản lý Lớp thi</h1>
         </div>
-        <button className="btn-add" onClick={openAdd}>
-          <Plus size={18} />
-          Thêm Lớp thi
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn-add" onClick={handleSyncSheets} style={{ background: '#10b981' }}>
+            <CloudDownload size={18} />
+            Đồng bộ Lịch thi
+          </button>
+          <button className="btn-add" onClick={openAdd}>
+            <Plus size={18} />
+            Thêm Lớp thi
+          </button>
+        </div>
       </div>
 
       <div className="search-bar">

@@ -244,6 +244,152 @@ def sync_students_to_room(room_id: int, payload: SyncSheetRequest, db: Session =
     }
 
 # ==========================================
+# ĐỒNG BỘ LỊCH THI TỪ GOOGLE SHEETS
+# ==========================================
+
+def _parse_date(value: str) -> date | None:
+    """Parse date từ nhiều format phổ biến"""
+    from datetime import datetime as dt
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%m/%d/%Y"):
+        try:
+            return dt.strptime(value.strip(), fmt).date()
+        except ValueError:
+            continue
+    return None
+
+def _parse_time(value: str) -> time | None:
+    """Parse time từ nhiều format phổ biến"""
+    from datetime import datetime as dt
+    for fmt in ("%H:%M:%S", "%H:%M", "%H:%M:%S.%f"):
+        try:
+            return dt.strptime(value.strip(), fmt).time()
+        except ValueError:
+            continue
+    return None
+
+@router.post("/sync-from-sheets", status_code=status.HTTP_200_OK)
+def sync_exam_rooms_from_sheets(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Đồng bộ lịch thi từ Google Sheets vào Database.
+    Tự động quét tất cả tab có prefix 'LichThi_' (vd: LichThi_1, LichThi_2).
+    Mỗi sheet cần có header: Phòng thi | Môn thi | Ngày thi | Giờ bắt đầu | Giờ kết thúc
+    """
+    sheet_service, mode = create_sheet_service()
+    
+    all_tabs = sheet_service.list_sheet_names()
+    lich_tabs = [t for t in all_tabs if t.startswith("LichThi_")]
+    
+    if not lich_tabs:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Không tìm thấy tab nào có prefix 'LichThi_'. Các tab hiện có: {', '.join(all_tabs)}"
+        )
+
+    total_added = 0
+    total_skipped = 0
+    total_errors = 0
+    sheet_results = []
+
+    for tab_name in lich_tabs:
+        try:
+            rows = sheet_service.read_rows(tab_name)
+        except Exception as e:
+            sheet_results.append({"sheet": tab_name, "error": str(e)})
+            continue
+
+        if not rows or len(rows) <= 1:
+            sheet_results.append({"sheet": tab_name, "added": 0, "note": "Trống hoặc chỉ có header"})
+            continue
+
+        added_count = 0
+        skipped_count = 0
+        error_rows = 0
+
+        for row_idx, row in enumerate(rows[1:], start=2):
+            if not row or len(row) < 5:
+                error_rows += 1
+                continue
+
+            room_name = row[0].strip() if row[0].strip() else None
+            subject = row[1].strip() if len(row) > 1 and row[1].strip() else None
+            exam_date_str = row[2].strip() if len(row) > 2 and row[2].strip() else None
+            start_time_str = row[3].strip() if len(row) > 3 and row[3].strip() else None
+            end_time_str = row[4].strip() if len(row) > 4 and row[4].strip() else None
+
+            if not all([room_name, subject, exam_date_str, start_time_str, end_time_str]):
+                error_rows += 1
+                continue
+
+            parsed_date = _parse_date(exam_date_str)
+            parsed_start = _parse_time(start_time_str)
+            parsed_end = _parse_time(end_time_str)
+
+            if not parsed_date or not parsed_start or not parsed_end:
+                error_rows += 1
+                continue
+
+            if parsed_start >= parsed_end:
+                error_rows += 1
+                continue
+
+            # Kiểm tra trùng lặp: cùng phòng + môn + ngày + giờ bắt đầu
+            existing = db.query(ExamRoom).filter(
+                ExamRoom.room_name == room_name,
+                ExamRoom.subject == subject,
+                ExamRoom.exam_date == parsed_date,
+                ExamRoom.start_time == parsed_start,
+            ).first()
+
+            if existing:
+                skipped_count += 1
+                continue
+
+            new_room = ExamRoom(
+                room_name=room_name,
+                subject=subject,
+                exam_date=parsed_date,
+                start_time=parsed_start,
+                end_time=parsed_end,
+                created_by=current_user.id,
+            )
+            db.add(new_room)
+            added_count += 1
+
+        total_added += added_count
+        total_skipped += skipped_count
+        total_errors += error_rows
+        sheet_results.append({
+            "sheet": tab_name,
+            "added": added_count,
+            "skipped": skipped_count,
+            "errors": error_rows,
+        })
+
+    if total_added > 0:
+        db.commit()
+
+    parts = []
+    if total_added > 0:
+        parts.append(f"Thêm mới {total_added} lớp thi")
+    if total_skipped > 0:
+        parts.append(f"Bỏ qua {total_skipped} lớp đã tồn tại")
+    if total_errors > 0:
+        parts.append(f"{total_errors} dòng lỗi")
+    if not parts:
+        parts.append("Không có thay đổi")
+
+    msg = f"Đồng bộ {len(lich_tabs)} sheet thành công. " + ", ".join(parts) + "."
+
+    return {
+        "message": msg,
+        "added": total_added,
+        "skipped": total_skipped,
+        "errors": total_errors,
+        "sheets_processed": sheet_results,
+    }
+
+
+# ==========================================
 # QUẢN LÝ THIẾT BỊ TRONG LỚP THI
 # ==========================================
 

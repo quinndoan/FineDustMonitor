@@ -100,130 +100,153 @@ def delete_student(mssv: str, db: Session = Depends(get_db), current_user: User 
     db.commit()
     return None
 
-@router.get("/debug-sheet", status_code=status.HTTP_200_OK)
-def debug_sheet_data(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """[DEBUG] Xem raw data từ Google Sheet và so sánh với DB"""
+@router.get("/sheet-tabs", status_code=status.HTTP_200_OK)
+def get_sheet_tabs(current_user: User = Depends(get_current_user)):
+    """Lấy danh sách các tab sheet có prefix SV_ từ Google Spreadsheet"""
     sheet_service, mode = create_sheet_service()
-    try:
-        rows = sheet_service.read_rows("Students")
-    except Exception as e:
-        return {"error": str(e), "mode": mode}
-
-    # Lấy 5 SV đầu từ DB để so sánh
-    db_students = db.query(Student).limit(5).all()
-    db_data = [
-        {"mssv": s.mssv, "card_id": s.card_id, "full_name": s.full_name, 
-         "email": s.email, "faculty": s.faculty, "class_name": s.class_name}
-        for s in db_students
-    ]
-
+    all_tabs = sheet_service.list_sheet_names()
+    sv_tabs = [t for t in all_tabs if t.startswith("SV_")]
     return {
         "mode": mode,
-        "sheet_header": rows[0] if rows else [],
-        "sheet_first_5_rows": rows[1:6] if len(rows) > 1 else [],
-        "sheet_total_rows": len(rows) - 1 if rows else 0,
-        "sheet_columns_count": len(rows[0]) if rows else 0,
-        "db_first_5": db_data,
-        "expected_mapping": {
-            "row[0]": "MSSV",
-            "row[1]": "Card ID",
-            "row[2]": "Họ và Tên",
-            "row[3]": "Email",
-            "row[4]": "Khoa (faculty)",
-            "row[5]": "Lớp (class_name)",
-        }
+        "all_tabs": all_tabs,
+        "sv_tabs": sv_tabs,
     }
 
 @router.post("/sync-from-sheets", status_code=status.HTTP_200_OK)
 def sync_students_from_sheets(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Đồng bộ danh sách sinh viên từ Google Sheets vào Database"""
+    """
+    Đồng bộ danh sách sinh viên từ Google Sheets vào Database.
+    Tự động quét tất cả tab có prefix 'SV_' (vd: SV_KHMT, SV_KTMT).
+    Tên lớp được lấy từ tên sheet (phần sau 'SV_').
+    Mỗi sheet cần có header: MSSV | Card ID | Họ và tên | Email | Khoa
+    (class_name tự động lấy từ tên sheet)
+    """
     sheet_service, mode = create_sheet_service()
-    try:
-        rows = sheet_service.read_rows("Students")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Lỗi khi đọc Google Sheets: {str(e)}")
+    
+    # Tìm tất cả sheet tabs có prefix "SV_"
+    all_tabs = sheet_service.list_sheet_names()
+    sv_tabs = [t for t in all_tabs if t.startswith("SV_")]
+    
+    if not sv_tabs:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Không tìm thấy tab nào có prefix 'SV_'. Các tab hiện có: {', '.join(all_tabs)}"
+        )
 
-    if not rows or len(rows) <= 1:
-        return {"message": "Sheet trống hoặc chỉ có header, không có dữ liệu để đồng bộ", "added": 0}
-
-
-    # Bỏ qua dòng header (dòng 0)
-    added_count = 0
-    updated_count = 0
-    duplicate_card_count = 0
+    total_added = 0
+    total_updated = 0
+    total_duplicate_card = 0
     seen_card_ids = set()
+    sheet_results = []
 
-    for row in rows[1:]:
-        if not row or len(row) < 3:
-            continue # Bỏ qua dòng thiếu dữ liệu
-            
-        mssv = row[0].strip()
-        card_id = row[1].strip() if len(row) > 1 and row[1].strip() else None
-        full_name = row[2].strip() if len(row) > 2 and row[2].strip() else "Unknown"
-        email = row[3].strip() if len(row) > 3 and row[3].strip() else None
-        faculty = row[4].strip() if len(row) > 4 and row[4].strip() else None
-        class_name = row[5].strip() if len(row) > 5 and row[5].strip() else None
+    for tab_name in sv_tabs:
+        # Trích class_name từ tên sheet: "SV_KHMT" → "KHMT"
+        class_name_from_sheet = tab_name[3:]  # Bỏ prefix "SV_"
 
-        # Kiểm tra card_id trùng lặp để tránh lỗi UNIQUE constraint của PostgreSQL
-        if card_id:
-            if card_id in seen_card_ids:
-                duplicate_card_count += 1
-                card_id = None
-            else:
-                seen_card_ids.add(card_id)
-
-        # Kiểm tra xem mssv đã tồn tại chưa
-        existing = db.query(Student).filter(Student.mssv == mssv).first()
-        if existing:
-            # Cập nhật thông tin cho sinh viên đã tồn tại
-            changed = False
-            if full_name and full_name != "Unknown" and existing.full_name != full_name:
-                existing.full_name = full_name
-                changed = True
-            if email is not None and existing.email != email:
-                existing.email = email
-                changed = True
-            if faculty is not None and existing.faculty != faculty:
-                existing.faculty = faculty
-                changed = True
-            if class_name is not None and existing.class_name != class_name:
-                existing.class_name = class_name
-                changed = True
-            # Cập nhật card_id nếu SV chưa có card_id hoặc card_id từ Sheet khác
-            if card_id and existing.card_id != card_id:
-                # Kiểm tra card_id mới có bị trùng với SV khác không
-                conflict = db.query(Student).filter(Student.card_id == card_id, Student.id != existing.id).first()
-                if not conflict:
-                    existing.card_id = card_id
-                    changed = True
-                else:
-                    duplicate_card_count += 1
-            if changed:
-                updated_count += 1
+        try:
+            rows = sheet_service.read_rows(tab_name)
+        except Exception as e:
+            sheet_results.append({"sheet": tab_name, "error": str(e)})
             continue
-            
-        # Sinh viên mới — kiểm tra card_id trùng trong DB
-        if card_id:
-            if db.query(Student).filter(Student.card_id == card_id).first():
-                duplicate_card_count += 1
-                card_id = None
 
-        new_student = Student(mssv=mssv, card_id=card_id, full_name=full_name, email=email, faculty=faculty, class_name=class_name)
-        db.add(new_student)
-        added_count += 1
-            
-    if added_count > 0 or updated_count > 0:
+        if not rows or len(rows) <= 1:
+            sheet_results.append({"sheet": tab_name, "added": 0, "updated": 0, "note": "Trống hoặc chỉ có header"})
+            continue
+
+        added_count = 0
+        updated_count = 0
+        duplicate_card_count = 0
+
+        for row in rows[1:]:
+            if not row or len(row) < 3:
+                continue
+
+            mssv = row[0].strip()
+            card_id = row[1].strip() if len(row) > 1 and row[1].strip() else None
+            full_name = row[2].strip() if len(row) > 2 and row[2].strip() else "Unknown"
+            email = row[3].strip() if len(row) > 3 and row[3].strip() else None
+            # Khoa lấy từ cột 5 (index 4), class_name lấy từ tên sheet
+            faculty = row[4].strip() if len(row) > 4 and row[4].strip() else None
+            class_name = class_name_from_sheet
+
+            # Kiểm tra card_id trùng lặp
+            if card_id:
+                if card_id in seen_card_ids:
+                    duplicate_card_count += 1
+                    card_id = None
+                else:
+                    seen_card_ids.add(card_id)
+
+            # Upsert: update nếu đã tồn tại, insert nếu mới
+            existing = db.query(Student).filter(Student.mssv == mssv).first()
+            if existing:
+                changed = False
+                if full_name and full_name != "Unknown" and existing.full_name != full_name:
+                    existing.full_name = full_name
+                    changed = True
+                if email is not None and existing.email != email:
+                    existing.email = email
+                    changed = True
+                if faculty is not None and existing.faculty != faculty:
+                    existing.faculty = faculty
+                    changed = True
+                if class_name and existing.class_name != class_name:
+                    existing.class_name = class_name
+                    changed = True
+                if card_id and existing.card_id != card_id:
+                    conflict = db.query(Student).filter(Student.card_id == card_id, Student.id != existing.id).first()
+                    if not conflict:
+                        existing.card_id = card_id
+                        changed = True
+                    else:
+                        duplicate_card_count += 1
+                if changed:
+                    updated_count += 1
+                continue
+
+            # Sinh viên mới
+            if card_id:
+                if db.query(Student).filter(Student.card_id == card_id).first():
+                    duplicate_card_count += 1
+                    card_id = None
+
+            new_student = Student(
+                mssv=mssv, card_id=card_id, full_name=full_name,
+                email=email, faculty=faculty, class_name=class_name,
+            )
+            db.add(new_student)
+            added_count += 1
+
+        total_added += added_count
+        total_updated += updated_count
+        total_duplicate_card += duplicate_card_count
+        sheet_results.append({
+            "sheet": tab_name,
+            "class_name": class_name_from_sheet,
+            "added": added_count,
+            "updated": updated_count,
+        })
+
+    if total_added > 0 or total_updated > 0:
         db.commit()
 
+    # Tạo message tổng kết
     parts = []
-    if added_count > 0:
-        parts.append(f"Thêm mới {added_count} sinh viên")
-    if updated_count > 0:
-        parts.append(f"Cập nhật {updated_count} sinh viên")
-    if added_count == 0 and updated_count == 0:
-        parts.append("Không có thay đổi nào")
-    msg = "Đồng bộ thành công. " + ", ".join(parts) + "."
-    if duplicate_card_count > 0:
-        msg += f" (Phát hiện {duplicate_card_count} mã thẻ trùng lặp, đã bỏ qua)."
+    if total_added > 0:
+        parts.append(f"Thêm mới {total_added}")
+    if total_updated > 0:
+        parts.append(f"Cập nhật {total_updated}")
+    if total_added == 0 and total_updated == 0:
+        parts.append("Không có thay đổi")
+    
+    msg = f"Đồng bộ {len(sv_tabs)} sheet thành công. " + ", ".join(parts) + " sinh viên."
+    if total_duplicate_card > 0:
+        msg += f" ({total_duplicate_card} mã thẻ trùng lặp, đã bỏ qua)."
 
-    return {"message": msg, "added": added_count, "updated": updated_count}
+    return {
+        "message": msg,
+        "added": total_added,
+        "updated": total_updated,
+        "sheets_processed": sheet_results,
+    }
+
