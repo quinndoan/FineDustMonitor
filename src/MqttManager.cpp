@@ -1,4 +1,11 @@
 #include "MqttManager.h"
+#include <ArduinoJson.h>
+
+// Các biến toàn cục để giao tiếp giữa MQTT Callback và hàm xử lý thẻ
+bool mqttVerifyReceived = false;
+bool mqttVerifyAccepted = false;
+String mqttVerifyMssv = "";
+String mqttVerifyName = "";
 
 
 /**  */
@@ -54,6 +61,9 @@ bool MqttManager::setup() {
     // Khởi tạo tên topic dựa trên DeviceID đã lưu trong Flash
     sprintf(topicUp, MQTT_TOPIC_UP_TEMPLATE, configMgr.params.deviceID.c_str());
     sprintf(topicDown, MQTT_TOPIC_DOWN_TEMPLATE, configMgr.params.deviceID.c_str());
+    sprintf(topicRfid, MQTT_TOPIC_RFID_TEMPLATE, configMgr.params.deviceID.c_str());
+    sprintf(topicNfc, MQTT_TOPIC_NFC_TEMPLATE, configMgr.params.deviceID.c_str());
+    sprintf(topicQr, MQTT_TOPIC_QR_TEMPLATE, configMgr.params.deviceID.c_str());
 
 
     Serial.println(F("Kiểm tra MQTT Broker duy nhất khi khởi động.."));
@@ -98,6 +108,24 @@ void MqttManager::callback(char* topic, byte* payload, unsigned int length) {
         Serial.println("Đang khởi động lại theo lệnh MQTT...");
         delay(500);
         ESP.restart();
+    } else if (message.startsWith("{")) {
+        StaticJsonDocument<512> doc;
+        DeserializationError error = deserializeJson(doc, message);
+        if (!error && doc.containsKey("action") && doc["action"] == "verify_result") {
+            mqttVerifyAccepted = (doc["status"] == "accepted");
+            if (doc.containsKey("mssv")) {
+                mqttVerifyMssv = doc["mssv"].as<String>();
+            } else {
+                mqttVerifyMssv = "";
+            }
+            if (doc.containsKey("name")) {
+                mqttVerifyName = doc["name"].as<String>();
+            } else {
+                mqttVerifyName = "";
+            }
+            mqttVerifyReceived = true;
+            Serial.println("[MQTT] Received Verify Result.");
+        }
     }
 }
 
@@ -202,6 +230,27 @@ void MqttManager::publishBin(float v1, float v2, float v3, float v4) {
     } data = { {v1, v2, v3, v4} };
     
     publish((uint8_t*)&data, sizeof(data));
+}
+
+// ======================== NHÓM HÀM QUÉT THẺ ========================
+
+bool MqttManager::publishRfid(String cardUid) {
+    if (!configMgr.params.mqttEnabled || !client.connected()) return false;
+    String payload = "{\"device_id\":\"" + configMgr.params.deviceID + "\",\"uid\":\"" + cardUid + "\"}";
+    return client.publish(topicRfid, (const uint8_t*)payload.c_str(), payload.length(), false);
+}
+
+bool MqttManager::publishNfc(String cardUid) {
+    if (!configMgr.params.mqttEnabled || !client.connected()) return false;
+    String payload = "{\"device_id\":\"" + configMgr.params.deviceID + "\",\"uid\":\"" + cardUid + "\"}";
+    return client.publish(topicNfc, (const uint8_t*)payload.c_str(), payload.length(), false);
+}
+
+bool MqttManager::publishQr(String qrData) {
+    if (!configMgr.params.mqttEnabled || !client.connected()) return false;
+    // Đối với QR, có thể nội dung quét chứa nhiều ký tự, cần đảm bảo không chứa ngoặc kép " (hoặc phải escape)
+    String payload = "{\"device_id\":\"" + configMgr.params.deviceID + "\",\"qr_data\":\"" + qrData + "\"}";
+    return client.publish(topicQr, (const uint8_t*)payload.c_str(), payload.length(), false);
 }
 
 MqttManager mqttMgr;

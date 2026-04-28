@@ -326,10 +326,12 @@ void handleCardCheck(String tag, const char *logPrefix) {
   Serial.print(" Tag UID: ");
   Serial.println(tag);
 
-  // Gửi chung gói dữ liệu về server qua trường "rfid".
-  // Bạn có thể đổi JSON thành {"nfc":...} nếu muốn phân biệt với 125KHz ở sheet
-  String jsonPayload = "{\"rfid\":\"" + tag + "\"}";
-  mqttMgr.publishString(jsonPayload);
+  // Gửi data lên MQTT theo từng topic riêng biệt
+  if (String(logPrefix).indexOf("RFID") >= 0) {
+      mqttMgr.publishRfid(tag);
+  } else if (String(logPrefix).indexOf("NFC") >= 0) {
+      mqttMgr.publishNfc(tag);
+  }
 
   // --- BƯỚC 4: GỌI API KIỂM TRA HỢP LỆ VÀ XUẤT LÊN MÀN HÌNH ---
   u8g2.clearBuffer();
@@ -337,10 +339,38 @@ void handleCardCheck(String tag, const char *logPrefix) {
   u8g2.drawUTF8(5, 20, "Processing...");
   u8g2.sendBuffer();
 
-  // Yêu cầu API quét (mất ~1-2s)
-  String studentId;
-  String studentName;
-  bool isAccepted = apiMgr.verifyStudent(tag, true, studentId, studentName);
+  // Đợi phản hồi từ MQTT
+  extern bool mqttVerifyReceived;
+  extern bool mqttVerifyAccepted;
+  extern String mqttVerifyMssv;
+  extern String mqttVerifyName;
+
+  mqttVerifyReceived = false;
+  unsigned long startWait = millis();
+  while (millis() - startWait < 5000) {
+      if (wifiStatus) mqttMgr.loop();
+      if (mqttVerifyReceived) break;
+      delay(10);
+  }
+
+  bool isAccepted = false;
+  String studentId = "";
+  String studentName = "";
+
+  if (mqttVerifyReceived) {
+      isAccepted = mqttVerifyAccepted;
+      studentId = mqttVerifyMssv;
+      studentName = mqttVerifyName;
+  } else {
+      u8g2.clearBuffer();
+      u8g2.setFont(u8g2_font_7x14B_tr);
+      u8g2.drawUTF8(5, 35, "Timeout / Error");
+      u8g2.sendBuffer();
+      buzzerMgr.beepError();
+      delay(2000);
+      renderCurrentMode();
+      return;
+  }
 
   u8g2.clearBuffer();
   if (isAccepted) {
@@ -393,10 +423,8 @@ void handleQrCardCheck(const String &qrPayload) {
   Serial.print(" Name: ");
   Serial.println(parsedName);
 
-  // Bước 2: Gửi JSON lên MQTT
-  String parsedJson;
-  parseHustCardUrlToJson(qrPayload, parsedJson);
-  mqttMgr.publishString(parsedJson);
+  // Bước 2: Gửi JSON lên MQTT vào topic riêng của QR
+  mqttMgr.publishQr(qrPayload);
 
   // Bước 3: Hiển thị Processing trên OLED
   u8g2.clearBuffer();
@@ -404,11 +432,38 @@ void handleQrCardCheck(const String &qrPayload) {
   u8g2.drawUTF8(5, 20, "Processing...");
   u8g2.sendBuffer();
 
-  // Bước 4: Gọi API Google Sheet để xác minh (dùng type=qr, data=MSSV)
-  String studentId;
-  String studentName;
-  bool isAccepted =
-      apiMgr.verifyStudent(parsedStudentId, false, studentId, studentName);
+  // Bước 4: Đợi phản hồi từ MQTT
+  extern bool mqttVerifyReceived;
+  extern bool mqttVerifyAccepted;
+  extern String mqttVerifyMssv;
+  extern String mqttVerifyName;
+
+  mqttVerifyReceived = false;
+  unsigned long startWait = millis();
+  while (millis() - startWait < 5000) {
+      if (wifiStatus) mqttMgr.loop();
+      if (mqttVerifyReceived) break;
+      delay(10);
+  }
+
+  bool isAccepted = false;
+  String studentId = parsedStudentId;
+  String studentName = parsedName;
+
+  if (mqttVerifyReceived) {
+      isAccepted = mqttVerifyAccepted;
+      if (mqttVerifyMssv.length() > 0) studentId = mqttVerifyMssv;
+      if (mqttVerifyName.length() > 0) studentName = mqttVerifyName;
+  } else {
+      u8g2.clearBuffer();
+      u8g2.setFont(u8g2_font_7x14B_tr);
+      u8g2.drawUTF8(5, 35, "Timeout / Error");
+      u8g2.sendBuffer();
+      buzzerMgr.beepError();
+      delay(2000);
+      renderCurrentMode();
+      return;
+  }
 
   // Bước 5: Hiển thị kết quả lên OLED
   u8g2.clearBuffer();

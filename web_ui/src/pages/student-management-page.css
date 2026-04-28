@@ -135,6 +135,18 @@
   font-size: 0.85rem;
 }
 
+.faculty-cell {
+  color: #a78bfa !important;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.class-cell {
+  color: #67e8f9 !important;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 /* --- Row Actions --- */
 .row-actions {
   display: flex;

@@ -1,20 +1,69 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Mail, Lock, User, ArrowRight, Activity } from 'lucide-react'
+import { Mail, Lock, User, ArrowRight, Activity, Building2, Loader2 } from 'lucide-react'
+import { useAuth } from '../contexts/auth-context'
 import './login-page.css'
 
 /**
  * Login / Register page.
- * Currently just navigates directly to the dashboard on submit
- * (no real authentication). Tabs switch between login and register forms.
+ * Connects to POST /api/auth/login and POST /api/auth/register.
+ * On success, stores JWT via AuthContext and navigates to dashboard.
  */
 function LoginPage() {
   const [isRegister, setIsRegister] = useState(false)
-  const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [department, setDepartment] = useState('')
+  const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = (e) => {
+  const navigate = useNavigate()
+  const { login, register } = useAuth()
+
+  const resetForm = () => {
+    setEmail('')
+    setPassword('')
+    setConfirmPassword('')
+    setFullName('')
+    setDepartment('')
+    setError('')
+  }
+
+  const switchTab = (toRegister) => {
+    setIsRegister(toRegister)
+    setError('')
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    navigate('/dashboard')
+    setError('')
+
+    // Client-side validation
+    if (isRegister && password !== confirmPassword) {
+      setError('Mật khẩu xác nhận không khớp.')
+      return
+    }
+    if (password.length < 6) {
+      setError('Mật khẩu phải có ít nhất 6 ký tự.')
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      if (isRegister) {
+        await register(email, password, fullName, department)
+      } else {
+        await login(email, password)
+      }
+      navigate('/dashboard')
+    } catch (err) {
+      setError(err.message || 'Có lỗi xảy ra. Vui lòng thử lại.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -36,43 +85,99 @@ function LoginPage() {
         <div className="tab-switcher">
           <button
             className={`tab${!isRegister ? ' active' : ''}`}
-            onClick={() => setIsRegister(false)}
+            onClick={() => switchTab(false)}
           >
             Đăng nhập
           </button>
           <button
             className={`tab${isRegister ? ' active' : ''}`}
-            onClick={() => setIsRegister(true)}
+            onClick={() => switchTab(true)}
           >
             Đăng ký
           </button>
         </div>
 
+        {/* Error message */}
+        {error && (
+          <div className="login-error" id="login-error">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           {isRegister && (
-            <div className="input-group">
-              <User size={18} className="input-icon" />
-              <input type="text" placeholder="Họ và tên" required />
-            </div>
+            <>
+              <div className="input-group">
+                <User size={18} className="input-icon" />
+                <input
+                  type="text"
+                  placeholder="Họ và tên"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                  id="register-fullname"
+                />
+              </div>
+              <div className="input-group">
+                <Building2 size={18} className="input-icon" />
+                <input
+                  type="text"
+                  placeholder="Khoa / Phòng ban (tuỳ chọn)"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  id="register-department"
+                />
+              </div>
+            </>
           )}
           <div className="input-group">
             <Mail size={18} className="input-icon" />
-            <input type="email" placeholder="Email" required />
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              id="login-email"
+            />
           </div>
           <div className="input-group">
             <Lock size={18} className="input-icon" />
-            <input type="password" placeholder="Mật khẩu" required />
+            <input
+              type="password"
+              placeholder="Mật khẩu"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              id="login-password"
+            />
           </div>
           {isRegister && (
             <div className="input-group">
               <Lock size={18} className="input-icon" />
-              <input type="password" placeholder="Xác nhận mật khẩu" required />
+              <input
+                type="password"
+                placeholder="Xác nhận mật khẩu"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                id="register-confirm-password"
+              />
             </div>
           )}
 
-          <button type="submit" className="login-btn">
-            {isRegister ? 'Đăng ký' : 'Đăng nhập'}
-            <ArrowRight size={18} />
+          <button type="submit" className="login-btn" disabled={isSubmitting} id="login-submit">
+            {isSubmitting ? (
+              <>
+                <Loader2 size={18} className="spin" />
+                Đang xử lý...
+              </>
+            ) : (
+              <>
+                {isRegister ? 'Đăng ký' : 'Đăng nhập'}
+                <ArrowRight size={18} />
+              </>
+            )}
           </button>
         </form>
 

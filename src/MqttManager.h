@@ -16,6 +16,9 @@
 // Downstream: Server -> Thiết bị (Nhận lệnh)
 #define MQTT_TOPIC_UP_TEMPLATE "monitor_student/%s/data"
 #define MQTT_TOPIC_DOWN_TEMPLATE "monitor_student/%s/cmd"
+#define MQTT_TOPIC_RFID_TEMPLATE "monitor_student/%s/rfid"
+#define MQTT_TOPIC_NFC_TEMPLATE "monitor_student/%s/nfc"
+#define MQTT_TOPIC_QR_TEMPLATE "monitor_student/%s/qr"
 #define MQTT_TOPIC_STARTUP "startup" // Topic chung cho mọi thiết bị báo danh
 #define MQTT_CLIENT_ID_PREFIX "monitor_student-" // Công thức tạo mqtt client id = MQTT_CLIENT_ID_PREFIX + <deviceid> 
 
@@ -33,7 +36,9 @@ private:
 
     char topicUp[64];
     char topicDown[64];
-
+    char topicRfid[64];
+    char topicNfc[64];
+    char topicQr[64];
 
     // Gửi gói tin Startup và chờ xác nhận
     void sendStartupPacket();
@@ -81,6 +86,11 @@ public:
     void publishBin(float v1);
     void publishBin(float v1, float v2);
     void publishBin(float v1, float v2, float v3, float v4);
+
+    // --- BIẾN THỂ GỬI DỮ LIỆU QUÉT THẺ ---
+    bool publishRfid(String cardUid);
+    bool publishNfc(String cardUid);
+    bool publishQr(String qrData);
 };
 
 void WakeupMQTT();
