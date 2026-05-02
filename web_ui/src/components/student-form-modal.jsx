@@ -2,20 +2,23 @@ import { X } from 'lucide-react'
 import './student-form-modal.css'
 
 /**
- * Faculty → Class mapping for Vietnamese university departments.
- * Used to populate dependent dropdowns.
+ * 13 official training units for faculty dropdown.
  */
-const FACULTY_CLASS_MAP = {
-  'CNTT và Truyền thông': ['KHMT', 'KTMT', 'CNPM', 'HTTT', 'ATTT', 'MMT&TT'],
-  'Điện': ['KTĐ', 'TĐH', 'ĐTCN'],
-  'Điện - Điện tử': ['KTĐT', 'ĐTVT', 'KTYS'],
-  'Cơ khí': ['CKCT', 'CĐT', 'CNOTO'],
-  'Xây dựng': ['XDDD&CN', 'KTHT', 'VLXD'],
-  'Kinh tế': ['QTKD', 'TCNH', 'KT'],
-  'Ngoại ngữ': ['NNA', 'NNP', 'NNT'],
-}
-
-const FACULTIES = Object.keys(FACULTY_CLASS_MAP)
+const FACULTIES = [
+  'Trường Cơ khí',
+  'Trường Công nghệ Thông tin và Truyền thông',
+  'Trường Điện - Điện tử',
+  'Trường Vật liệu',
+  'Trường Hóa và Khoa học sự sống',
+  'Trường Kinh tế',
+  'Khoa Khoa học và Công nghệ Giáo dục',
+  'Khoa Vật lý kỹ thuật',
+  'Khoa Toán - Tin',
+  'Khoa Ngoại ngữ',
+  'Khoa Giáo dục Quốc phòng và An ninh',
+  'Khoa Giáo dục thể chất',
+  'Khoa Lý luận chính trị',
+]
 
 /**
  * Reusable modal for adding or editing a student.
@@ -34,11 +37,6 @@ function StudentFormModal({ isOpen, onClose, onSubmit, formData, onChange, isEdi
     e.preventDefault()
     onSubmit()
   }
-
-  // Get available classes for the currently selected faculty
-  const availableClasses = formData.faculty
-    ? (FACULTY_CLASS_MAP[formData.faculty] || [])
-    : []
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -100,7 +98,7 @@ function StudentFormModal({ isOpen, onClose, onSubmit, formData, onChange, isEdi
             />
           </div>
 
-          {/* Faculty dropdown */}
+          {/* Faculty dropdown + Class text input */}
           <div className="field-row">
             <div className="field-group">
               <label htmlFor="modal-faculty">Khoa / Trường</label>
@@ -108,11 +106,7 @@ function StudentFormModal({ isOpen, onClose, onSubmit, formData, onChange, isEdi
                 id="modal-faculty"
                 name="faculty"
                 value={formData.faculty}
-                onChange={(e) => {
-                  onChange(e)
-                  // Reset class_name when faculty changes
-                  onChange({ target: { name: 'class_name', value: '' } })
-                }}
+                onChange={onChange}
               >
                 <option value="">-- Chọn Khoa --</option>
                 {FACULTIES.map((f) => (
@@ -121,21 +115,17 @@ function StudentFormModal({ isOpen, onClose, onSubmit, formData, onChange, isEdi
               </select>
             </div>
 
-            {/* Class dropdown (dependent on faculty) */}
+            {/* Class name - free text input */}
             <div className="field-group">
               <label htmlFor="modal-class">Lớp</label>
-              <select
+              <input
                 id="modal-class"
+                type="text"
                 name="class_name"
                 value={formData.class_name}
                 onChange={onChange}
-                disabled={!formData.faculty}
-              >
-                <option value="">-- Chọn Lớp --</option>
-                {availableClasses.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+                placeholder="Nhập tên lớp (vd: KHMT, KTMT)"
+              />
             </div>
           </div>
 

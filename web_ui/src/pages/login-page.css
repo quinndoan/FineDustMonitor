@@ -139,7 +139,8 @@
   pointer-events: none;
 }
 
-.input-group input {
+.input-group input,
+.input-group select {
   width: 100%;
   padding: 0.85rem 0.85rem 0.85rem 2.75rem;
   background: rgba(255, 255, 255, 0.04);
@@ -150,9 +151,23 @@
   box-sizing: border-box;
   transition: all 0.2s ease;
   font-family: 'Inter', sans-serif;
+  appearance: none; /* remove default arrow for select */
 }
 
-.input-group input:focus {
+/* Add custom arrow for select */
+.select-group::after {
+  content: '▼';
+  font-size: 0.7rem;
+  color: #475569;
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.input-group input:focus,
+.input-group select:focus {
   outline: none;
   border-color: #6366f1;
   background: rgba(255, 255, 255, 0.06);
@@ -161,6 +176,15 @@
 
 .input-group input::placeholder {
   color: #475569;
+}
+
+.input-group select.placeholder-select {
+  color: #475569;
+}
+
+.input-group select option {
+  background-color: #0f172a;
+  color: #f1f5f9;
 }
 
 /* --- Submit Button --- */
@@ -237,3 +261,134 @@
   transform: none !important;
   box-shadow: none !important;
 }
+
+/* ===== Forgot Password Overlay ===== */
+
+.forgot-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 10, 19, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.forgot-card {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 2.5rem;
+  animation: slideUp 0.4s ease;
+}
+
+.forgot-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.forgot-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin: 0 auto 1rem;
+  animation: pulseIcon 2s ease-in-out infinite;
+}
+
+.forgot-icon.otp-icon {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+}
+
+.forgot-icon.done-icon {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+}
+
+@keyframes pulseIcon {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.3); }
+  50%      { transform: scale(1.05); box-shadow: 0 0 20px 4px rgba(99, 102, 241, 0.15); }
+}
+
+.forgot-header h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0 0 0.5rem;
+}
+
+.forgot-header p {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.forgot-header p strong {
+  color: #818cf8;
+}
+
+/* OTP input special styling */
+.otp-input {
+  letter-spacing: 6px;
+  font-size: 1.2rem !important;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Success message */
+.forgot-success {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  animation: slideUp 0.3s ease;
+}
+
+/* Back button */
+.forgot-back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.65rem;
+  margin-top: 1rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.forgot-back-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
