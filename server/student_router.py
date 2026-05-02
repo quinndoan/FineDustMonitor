@@ -89,6 +89,26 @@ def update_student(mssv: str, payload: StudentUpdate, db: Session = Depends(get_
 
     db.commit()
     db.refresh(student)
+
+    # Đồng bộ ngược lên Google Sheets (tìm MSSV trong tất cả tab SV_*)
+    try:
+        sheet_service, mode = create_sheet_service()
+        if mode == "google_sheets":
+            row_data = [
+                student.mssv,
+                student.card_id or "",
+                student.full_name,
+                student.email or "",
+                student.faculty or "",
+                student.class_name or "",
+            ]
+            sv_tabs = [t for t in sheet_service.list_sheet_names() if t.startswith("SV_")]
+            for tab in sv_tabs:
+                if sheet_service.update_row_by_key(tab, mssv, row_data):
+                    break  # Đã tìm thấy và cập nhật, không cần tìm tiếp
+    except Exception as e:
+        print(f"⚠️ Không thể đồng bộ ngược lên Sheets: {e}")
+
     return student
 
 @router.delete("/{mssv}", status_code=status.HTTP_204_NO_CONTENT)
@@ -165,9 +185,10 @@ def sync_students_from_sheets(db: Session = Depends(get_db), current_user: User 
             card_id = row[1].strip() if len(row) > 1 and row[1].strip() else None
             full_name = row[2].strip() if len(row) > 2 and row[2].strip() else "Unknown"
             email = row[3].strip() if len(row) > 3 and row[3].strip() else None
-            # Khoa lấy từ cột 5 (index 4), class_name lấy từ tên sheet
+            # Khoa lấy từ cột 5 (index 4)
+            # class_name: ưu tiên cột 6 (index 5) trên Sheet, nếu trống thì lấy từ tên tab
             faculty = row[4].strip() if len(row) > 4 and row[4].strip() else None
-            class_name = class_name_from_sheet
+            class_name = row[5].strip() if len(row) > 5 and row[5].strip() else class_name_from_sheet
 
             # Kiểm tra card_id trùng lặp
             if card_id:

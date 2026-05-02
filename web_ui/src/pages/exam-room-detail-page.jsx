@@ -290,7 +290,7 @@ function ExamRoomDetailPage() {
         </form>
         <button onClick={handleSyncSheets} className="btn-add" style={{ background: '#10b981', height: '100%', whiteSpace: 'nowrap' }}>
           <CloudDownload size={18} />
-          Nhập từ Sheets
+          Thêm từ Sheets
         </button>
       </div>
 

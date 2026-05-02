@@ -14,6 +14,7 @@ from auth_router import router as auth_router
 from student_router import router as student_router
 from exam_room_router import router as exam_room_router
 from device_router import router as device_router
+from dashboard_router import router as dashboard_router
 from database import engine
 import models
 
@@ -50,6 +51,7 @@ app.include_router(auth_router)
 app.include_router(student_router)
 app.include_router(exam_room_router)
 app.include_router(device_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/")

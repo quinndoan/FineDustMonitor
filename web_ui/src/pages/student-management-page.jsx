@@ -166,7 +166,7 @@ function StudentManagementPage() {
         <div style={{ display: 'flex', gap: '10px' }}>
           <button className="btn-add" onClick={handleSyncSheets} style={{ background: '#10b981' }}>
             <CloudDownload size={18} />
-            Đồng bộ từ Sheets
+            Thêm từ Sheets
           </button>
           <button className="btn-add" onClick={openAdd} id="btn-add-student">
             <Plus size={18} />

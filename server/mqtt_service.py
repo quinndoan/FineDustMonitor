@@ -5,7 +5,7 @@ from datetime import datetime
 import paho.mqtt.client as mqtt
 
 from database import SessionLocal
-from models import Device, Student, ExamRoomStudent, AttendanceStatus
+from models import Device, Student, ExamRoomStudent, AttendanceStatus, ScanLog
 
 logging.basicConfig(level=logging.INFO)
 
@@ -78,6 +78,8 @@ def process_scan(device_id: str, scan_type: str, data: dict):
             return
 
         room_id = device.assigned_room_id
+        # Extract raw scan data for logging
+        raw_scan_data = data.get("uid", data.get("qr_data", str(data)))
         student = None
         
         if scan_type in ["rfid", "nfc"]:
@@ -121,6 +123,14 @@ def process_scan(device_id: str, scan_type: str, data: dict):
                 relation.attendance_status = AttendanceStatus.PRESENT
                 relation.check_in_device_id = device.id
                 relation.checked_in_at = datetime.utcnow()
+
+                # Log accepted scan
+                db.add(ScanLog(
+                    device_id=device_id, scan_type=scan_type,
+                    scan_data=raw_scan_data, result="accepted",
+                    student_mssv=student.mssv, student_name=student.full_name,
+                    room_id=room_id,
+                ))
                 db.commit()
                 logging.info(f"[MQTT] Successfully marked student {student.mssv} PRESENT in room {room_id}")
                 
@@ -148,11 +158,26 @@ def process_scan(device_id: str, scan_type: str, data: dict):
                     )
             else:
                 logging.warning(f"[MQTT] Student {student.mssv} is not enrolled in exam room {room_id}")
+                # Log denied scan — student not in this room
+                db.add(ScanLog(
+                    device_id=device_id, scan_type=scan_type,
+                    scan_data=raw_scan_data, result="denied",
+                    student_mssv=student.mssv, student_name=student.full_name,
+                    room_id=room_id,
+                ))
+                db.commit()
                 if mqtt_client:
                     response = {"action": "verify_result", "status": "denied", "message": "Not in room"}
                     mqtt_client.publish(f"monitor_student/{device_id}/cmd", json.dumps(response))
         else:
             logging.warning(f"[MQTT] Student not found in DB for scan data: {data}")
+            # Log denied scan — student not found
+            db.add(ScanLog(
+                device_id=device_id, scan_type=scan_type,
+                scan_data=raw_scan_data, result="denied",
+                room_id=room_id,
+            ))
+            db.commit()
             if mqtt_client:
                 response = {"action": "verify_result", "status": "denied", "message": "Not found"}
                 mqtt_client.publish(f"monitor_student/{device_id}/cmd", json.dumps(response))

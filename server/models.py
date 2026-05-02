@@ -122,3 +122,18 @@ class ExamRoomStudent(Base):
     # Relationships
     exam_room = relationship("ExamRoom", back_populates="students")
     student = relationship("Student", back_populates="exam_entries")
+
+
+class ScanLog(Base):
+    """Logs every scan attempt (RFID/NFC/QR) for dashboard analytics."""
+    __tablename__ = "scan_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    device_id = Column(String(100), nullable=False, index=True)
+    scan_type = Column(String(10), nullable=False)  # "rfid", "nfc", "qr"
+    scan_data = Column(String(255))  # raw UID or QR data
+    result = Column(String(20), nullable=False)  # "accepted", "denied"
+    student_mssv = Column(String(50))  # MSSV if student was found
+    student_name = Column(String(255))  # Student name if found
+    room_id = Column(Integer, ForeignKey("exam_rooms.id", ondelete="SET NULL"))
+    scanned_at = Column(DateTime, default=datetime.utcnow, index=True)

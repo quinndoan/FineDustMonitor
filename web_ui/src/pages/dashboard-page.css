@@ -7,6 +7,23 @@
 /* --- Page Header --- */
 .page-header {
   margin-bottom: 2rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.page-header-left h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0 0 0.25rem;
+}
+
+.page-header-left p,
+.page-header p {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin: 0;
 }
 
 .page-header h1 {
@@ -16,10 +33,26 @@
   margin: 0 0 0.25rem;
 }
 
-.page-header p {
-  color: #64748b;
-  font-size: 0.9rem;
-  margin: 0;
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 10px;
+  color: #818cf8;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.refresh-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateY(-1px);
 }
 
 /* --- Stat Cards --- */
@@ -79,6 +112,7 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .chart-card {
@@ -101,12 +135,17 @@
   margin: 0 0 1rem;
 }
 
+/* Wide chart (spans 2 columns) */
+.chart-wide {
+  grid-column: 1 / -1;
+}
+
 /* --- Pie Legend --- */
 .pie-legend {
   display: flex;
   justify-content: center;
-  gap: 1rem;
-  margin-top: 0.5rem;
+  gap: 1.5rem;
+  margin-top: 0.75rem;
   flex-wrap: wrap;
 }
 
@@ -114,21 +153,251 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: #94a3b8;
 }
 
+.legend-item strong {
+  color: #e2e8f0;
+}
+
 .legend-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+/* --- Empty Chart State --- */
+.chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 200px;
+  color: #475569;
+}
+
+.chart-empty.small {
+  min-height: 120px;
+}
+
+.chart-empty p {
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+/* --- Bottom Section --- */
+.bottom-section {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1.25rem;
+}
+
+/* Scan Type Card */
+.scan-type-card {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 1.5rem;
+}
+
+.scan-type-card h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0 0 1.25rem;
+}
+
+.scan-type-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.scan-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.scan-badge.rfid {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.scan-badge.qr {
+  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.badge-label {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.badge-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+/* Recent Scans Card */
+.recent-scans-card {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 1.5rem;
+}
+
+.recent-scans-card h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0 0 1rem;
+}
+
+.recent-table-wrapper {
+  overflow-x: auto;
+}
+
+.recent-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.recent-table th {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+}
+
+.recent-table td {
+  padding: 0.6rem 0.75rem;
+  color: #cbd5e1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  white-space: nowrap;
+}
+
+.recent-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.time-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #94a3b8;
+}
+
+/* Type tag badges */
+.type-tag {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.type-tag.rfid,
+.type-tag.nfc {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.type-tag.qr {
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+}
+
+/* Result tag */
+.result-tag {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.result-tag.accepted {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+}
+
+.result-tag.denied {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+}
+
+/* --- Loading / Error States --- */
+.dashboard-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 1rem;
+  color: #64748b;
+}
+
+.dashboard-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 1rem;
+  color: #f87171;
+}
+
+.retry-btn {
+  padding: 0.6rem 1.5rem;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 10px;
+  color: #818cf8;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.retry-btn:hover {
+  background: rgba(99, 102, 241, 0.25);
+}
+
+/* --- Spinner --- */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 /* --- Responsive --- */
 @media (max-width: 1200px) {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .bottom-section {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -138,6 +407,10 @@
   }
   .charts-grid {
     grid-template-columns: 1fr;
+  }
+  .page-header {
+    flex-direction: column;
+    gap: 1rem;
   }
 }
 

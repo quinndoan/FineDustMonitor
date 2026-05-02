@@ -80,30 +80,7 @@ class GoogleSheetsService:
 		self._spreadsheet_id = spreadsheet_id
 		self._default_range = default_range
 		self._service = build("sheets", "v4", credentials=credentials, cache_discovery=False)
-		self._init_students_sheet()
 
-	def _init_students_sheet(self) -> None:
-		try:
-			spreadsheet = self._service.spreadsheets().get(spreadsheetId=self._spreadsheet_id).execute()
-			for sheet in spreadsheet.get("sheets", []):
-				if sheet.get("properties", {}).get("title") == "Students":
-					return
-			
-			requests = [{"addSheet": {"properties": {"title": "Students"}}}]
-			self._service.spreadsheets().batchUpdate(
-				spreadsheetId=self._spreadsheet_id,
-				body={"requests": requests}
-			).execute()
-			
-			self._service.spreadsheets().values().update(
-				spreadsheetId=self._spreadsheet_id,
-				range="Students!A1:C1",
-				valueInputOption="USER_ENTERED",
-				body={"values": [["MSSV", "RFID", "Họ và tên"]]}
-			).execute()
-			print("✅ Tự động tạo tab 'Students' và Header thành công!")
-		except Exception as exc:
-			print(f"⚠️ Không thể tự động tạo tab 'Students': {exc}")
 
 	def list_sheet_names(self) -> list[str]:
 		"""Return all sheet tab names from the spreadsheet."""
@@ -192,7 +169,9 @@ class GoogleSheetsService:
 
 	def update_row(self, sheet_name: str, row_index: int, row_data: list[str]) -> None:
 		try:
-			range_name = f"{sheet_name}!A{row_index}:C{row_index}"
+			# Tính cột cuối dựa trên số phần tử (A=1, B=2, ..., Z=26)
+			end_col = chr(64 + len(row_data)) if len(row_data) <= 26 else 'Z'
+			range_name = f"{sheet_name}!A{row_index}:{end_col}{row_index}"
 			self._service.spreadsheets().values().update(
 				spreadsheetId=self._spreadsheet_id,
 				range=range_name,
@@ -201,6 +180,14 @@ class GoogleSheetsService:
 			).execute()
 		except HttpError as exc:
 			raise RuntimeError("Google Sheets update failed") from exc
+
+	def update_row_by_key(self, sheet_name: str, key_value: str, row_data: list[str]) -> bool:
+		"""Tìm row theo giá trị cột A (vd: MSSV) và update toàn bộ row. Return True nếu tìm thấy."""
+		row_index = self.find_row_index_by_mssv(sheet_name, key_value)
+		if row_index is not None:
+			self.update_row(sheet_name, row_index, row_data)
+			return True
+		return False
 
 	def delete_row(self, sheet_name: str, row_index: int) -> None:
 		try:

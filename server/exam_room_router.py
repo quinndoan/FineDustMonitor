@@ -84,6 +84,12 @@ def update_exam_room(room_id: int, payload: ExamRoomUpdate, db: Session = Depend
     if not room:
         raise HTTPException(status_code=404, detail="Không tìm thấy lớp thi")
     
+    # Lưu giá trị cũ để tìm row trên Sheet
+    old_room_name = room.room_name
+    old_subject = room.subject
+    old_date = str(room.exam_date)
+    old_start = room.start_time.strftime("%H:%M")
+
     if payload.room_name is not None: room.room_name = payload.room_name
     if payload.subject is not None: room.subject = payload.subject
     if payload.exam_date is not None: room.exam_date = payload.exam_date
@@ -95,6 +101,34 @@ def update_exam_room(room_id: int, payload: ExamRoomUpdate, db: Session = Depend
 
     db.commit()
     db.refresh(room)
+
+    # Đồng bộ ngược lên Google Sheets (tìm trong tất cả tab LichThi_*)
+    try:
+        sheet_service, mode = create_sheet_service()
+        if mode == "google_sheets":
+            new_row = [
+                room.room_name,
+                room.subject,
+                room.exam_date.strftime("%d/%m/%Y"),
+                room.start_time.strftime("%H:%M"),
+                room.end_time.strftime("%H:%M"),
+            ]
+            lich_tabs = [t for t in sheet_service.list_sheet_names() if t.startswith("LichThi_")]
+            for tab in lich_tabs:
+                try:
+                    rows = sheet_service.read_rows(tab)
+                    for i, row in enumerate(rows):
+                        if not row or len(row) < 4:
+                            continue
+                        # So khớp theo phòng + môn cũ (trước khi sửa)
+                        if row[0].strip() == old_room_name and row[1].strip() == old_subject:
+                            sheet_service.update_row(tab, i + 1, new_row)
+                            break
+                except Exception:
+                    continue
+    except Exception as e:
+        print(f"⚠️ Không thể đồng bộ lớp thi ngược lên Sheets: {e}")
+
     return room
 
 @router.delete("/{room_id}", status_code=status.HTTP_204_NO_CONTENT)

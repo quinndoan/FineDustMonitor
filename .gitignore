@@ -9,3 +9,6 @@ logs/xvba_debug.log
 compile_commands.json
 .cache/
 .clangd
+server/.env
+server/credentials.json
+server/_pycache_/

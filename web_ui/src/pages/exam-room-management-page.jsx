@@ -168,7 +168,7 @@ function ExamRoomManagementPage() {
         <div style={{ display: 'flex', gap: '10px' }}>
           <button className="btn-add" onClick={handleSyncSheets} style={{ background: '#10b981' }}>
             <CloudDownload size={18} />
-            Đồng bộ Lịch thi
+            Thêm từ Sheets
           </button>
           <button className="btn-add" onClick={openAdd}>
             <Plus size={18} />

@@ -94,7 +94,7 @@ function StudentFormModal({ isOpen, onClose, onSubmit, formData, onChange, isEdi
               name="email"
               value={formData.email}
               onChange={onChange}
-              placeholder="Nhập email sinh viên để gửi thông báo"
+              placeholder="Nhập email sinh viên"
             />
           </div>
 
