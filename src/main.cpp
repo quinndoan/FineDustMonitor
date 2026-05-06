@@ -192,6 +192,23 @@ static bool parseHustCardUrl(const String &qrPayload, String &studentIdOut,
   return true;
 }
 
+/**
+ * @brief Kiểm tra xem payload QR có phải là mã sinh viên thuần (chỉ chứa số,
+ *        6–10 ký tự — phổ biến nhất là 8 chữ số tại HUST).
+ * @return true nếu payload hợp lệ dạng MSSV thuần.
+ */
+static bool isPlainStudentId(const String &qrPayload) {
+  const size_t len = qrPayload.length();
+  if (len < 6 || len > 10)
+    return false;
+
+  for (size_t i = 0; i < len; i++) {
+    if (!isDigit(qrPayload.charAt(i)))
+      return false;
+  }
+  return true;
+}
+
 static bool parseHustCardUrlToJson(const String &qrPayload, String &jsonOut) {
   String studentId;
   String fullName;
@@ -408,11 +425,33 @@ void handleCardCheck(String tag, const char *logPrefix) {
 }
 
 void handleQrCardCheck(const String &qrPayload) {
-  // Bước 1: Parse URL thẻ HUST để lấy MSSV
+  // ------------------------------------------------------------------
+  // Bước 1: Xác định loại QR
+  //   Kiểu 1 — URL thẻ HUST:  https://ctsv.hust.edu.vn/#/card/MSSV/Ten
+  //   Kiểu 2 — MSSV thuần:    chuỗi 6-10 chữ số (ví dụ: 20210001)
+  // ------------------------------------------------------------------
   String parsedStudentId;
   String parsedName;
-  if (!parseHustCardUrl(qrPayload, parsedStudentId, parsedName)) {
-    Serial.print("[QR/UART] QR không phải thẻ HUST: ");
+  bool isHustUrl = parseHustCardUrl(qrPayload, parsedStudentId, parsedName);
+  bool isPlainId = false;
+
+  if (!isHustUrl) {
+    // Thử kiểu 2: MSSV thuần (chỉ chứa số, 6-10 ký tự)
+    String trimmed = qrPayload;
+    trimmed.trim();
+    isPlainId = isPlainStudentId(trimmed);
+
+    if (isPlainId) {
+      parsedStudentId = trimmed;
+      parsedName = ""; // Chưa biết tên — sẽ lấy từ backend
+      Serial.print("[QR/UART] QR dạng MSSV thuần: ");
+      Serial.println(parsedStudentId);
+    }
+  }
+
+  // Không phải kiểu nào hợp lệ → bỏ qua
+  if (!isHustUrl && !isPlainId) {
+    Serial.print("[QR/UART] QR không hợp lệ (không phải URL HUST / MSSV): ");
     Serial.println(qrPayload);
     return;
   }
@@ -421,10 +460,13 @@ void handleQrCardCheck(const String &qrPayload) {
   Serial.print("[QR/UART] Parsed MSSV: ");
   Serial.print(parsedStudentId);
   Serial.print(" Name: ");
-  Serial.println(parsedName);
+  Serial.println(parsedName.length() > 0 ? parsedName : "(chờ backend)");
 
-  // Bước 2: Gửi JSON lên MQTT vào topic riêng của QR
-  mqttMgr.publishQr(qrPayload);
+  // Bước 2: Gửi lên MQTT
+  //   Kiểu 1 — gửi nguyên URL gốc (backend parse lại)
+  //   Kiểu 2 — gửi MSSV thuần (backend tra cứu trực tiếp theo mssv)
+  const String &mqttPayload = isHustUrl ? qrPayload : parsedStudentId;
+  mqttMgr.publishQr(mqttPayload);
 
   // Bước 3: Hiển thị Processing trên OLED
   u8g2.clearBuffer();
@@ -471,7 +513,7 @@ void handleQrCardCheck(const String &qrPayload) {
     u8g2.setFont(u8g2_font_6x12_tr);
     u8g2.drawUTF8(5, 10, "Student: Accepted");
 
-    // Ưu tiên MSSV từ API, fallback về parsed từ URL
+    // Ưu tiên MSSV từ backend, fallback về parsed
     const String &displayId =
         (studentId.length() > 0) ? studentId : parsedStudentId;
     if (displayId.length() > 0) {
@@ -480,7 +522,7 @@ void handleQrCardCheck(const String &qrPayload) {
       u8g2.drawUTF8(5, 22, ("MSSV: " + displayId).c_str());
     }
 
-    // Ưu tiên tên từ API, fallback về parsed từ URL
+    // Ưu tiên tên từ backend, fallback về parsed (nếu có)
     const String &displayName =
         (studentName.length() > 0) ? studentName : parsedName;
     drawVietnameseNameCompact(u8g2, displayName);
