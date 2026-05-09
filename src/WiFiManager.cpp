@@ -19,8 +19,8 @@ static unsigned long wifiLastProgressLogMs = 0;
 static wl_status_t wifiLastStatusLogged = WL_IDLE_STATUS;
 static bool wifiEventLoggerInitialized = false;
 
-static const unsigned long WIFI_CONNECT_PROGRESS_LOG_MS = 2000;
-static const unsigned long WIFI_CONNECT_TIMEOUT_MS = 20000;
+static const unsigned long WIFI_CONNECT_PROGRESS_LOG_MS = 3000;
+static const unsigned long WIFI_CONNECT_TIMEOUT_MS = 60000;
 
 static const char *WiFiStatusToString(wl_status_t status)
 {
@@ -45,6 +45,9 @@ static const char *WiFiStatusToString(wl_status_t status)
     }
 }
 
+/* 
+ Chỉ có tác dụng in cấu hình kết nối Wifi, dùng khi debug
+ */
 static void WiFi_LogConnectionSnapshot(const char *prefix)
 {
     const wl_status_t st = WiFi.status();
@@ -145,23 +148,24 @@ void CheckAndEstablishWiFiConnection(unsigned long interval)
 {
     WiFi_EnsureEventLogger();
 
-    // 1. Nếu WiFi bị vô hiệu hóa
+    // 1. Quản lý vô hiệu hoá WiFi bằng phần mềm
     if (!configMgr.params.wifiEnabled)
     {
         if (wifiStatus)
-        { // Nếu đang kết nối thì ngắt đi
+        {
             WiFi.disconnect();
             wifiStatus = false;
+            wifiConnectAttemptInProgress = false; // Tránh treo cờ
             Serial.println(F("WiFi Disabled. Disconnected."));
         }
-        return; // Thoát luôn, không kiểm tra interval hay kết nối lại
+        return; // Dừng lại ở đây
     }
 
-    // 2. Logic kiểm tra WiFi bình thường khi wifiEnabled == true
+    // 2. Cập nhật và theo dõi trạng thái WiFi hiện tại
     unsigned long currentMillis = millis();
-    wifiStatus = (WiFi.status() == WL_CONNECTED);
-
     wl_status_t currentStatus = WiFi.status();
+    wifiStatus = (currentStatus == WL_CONNECTED);
+
     if (currentStatus != wifiLastStatusLogged)
     {
         Serial.print(F("[WiFi] Status transition: "));
@@ -171,49 +175,59 @@ void CheckAndEstablishWiFiConnection(unsigned long interval)
         wifiLastStatusLogged = currentStatus;
     }
 
-    if (wifiConnectAttemptInProgress)
+    // 3. State Machine (Cỗ máy trạng thái) của quá trình duy trì WiFi
+    if (wifiStatus)
     {
-        if (wifiStatus)
+        // Trạng thái 3A: Đã có mạng
+        if (wifiConnectAttemptInProgress)
         {
             WiFi_LogConnectionSnapshot("[WiFi] Connected:");
             wifiConnectAttemptInProgress = false;
         }
-        else
-        {
-            if (currentMillis - wifiLastProgressLogMs >= WIFI_CONNECT_PROGRESS_LOG_MS)
-            {
-                wifiLastProgressLogMs = currentMillis;
-                WiFi_LogConnectionSnapshot("[WiFi] Connecting...");
-            }
 
-            if (currentMillis - wifiConnectStartMs >= WIFI_CONNECT_TIMEOUT_MS)
-            {
-                WiFi_LogConnectionSnapshot("[WiFi] Connect timeout:");
-                Serial.println(F("[WiFi] Timeout reached, forcing disconnect before next retry."));
-                WiFi.disconnect();
-                wifiConnectAttemptInProgress = false;
-            }
+        // Vẫn in log định kỳ báo đang có mạng
+        if (currentMillis - lastWifiCheck >= interval || lastWifiCheck == 0)
+        {
+            lastWifiCheck = currentMillis;
+            WiFi_LogConnectionSnapshot("[WiFi] Already connected:");
         }
     }
-
-    if (currentMillis - lastWifiCheck >= interval || lastWifiCheck == 0)
+    else if (wifiConnectAttemptInProgress)
     {
-        lastWifiCheck = currentMillis;
-
-        if (!wifiStatus)
+        // Trạng thái 3B: Đang đợi bắt mạng (Attempting)
+        if (currentMillis - wifiLastProgressLogMs >= WIFI_CONNECT_PROGRESS_LOG_MS)
         {
+            wifiLastProgressLogMs = currentMillis;
+            WiFi_LogConnectionSnapshot("[WiFi] Connecting...");
+        }
+
+        // Timeout 60s
+        if (currentMillis - wifiConnectStartMs >= WIFI_CONNECT_TIMEOUT_MS)
+        {
+            WiFi_LogConnectionSnapshot("[WiFi] Connect timeout:");
+            Serial.println(F("[WiFi] Timeout reached, forcing disconnect before next retry."));
+            WiFi.disconnect();
+            wifiConnectAttemptInProgress = false; // Quay về Trạng thái 3C để thử lại sau
+        }
+    }
+    else
+    {
+        // Trạng thái 3C: Đã mất mạng và đang ở chế độ Rảnh (Idle)
+        // Chờ đủ chu kỳ (interval) để tiến hành xin kết nối lại
+        if (currentMillis - lastWifiCheck >= interval || lastWifiCheck == 0)
+        {
+            lastWifiCheck = currentMillis;
+
             WiFi.mode(WIFI_STA);
             WiFi_ApplySpoofedStaMacIfConfigured();
             WiFi.begin(configMgr.params.ssid.c_str(), configMgr.params.password.c_str());
+            
             Serial.println(F("Attempting to reconnect WiFi..."));
             WiFi_LogConnectionSnapshot("[WiFi] Begin connect:");
-            wifiConnectAttemptInProgress = true;
+            
+            wifiConnectAttemptInProgress = true; // Chuyển sang Trạng thái 3B
             wifiConnectStartMs = currentMillis;
             wifiLastProgressLogMs = currentMillis;
-        }
-        else
-        {
-            WiFi_LogConnectionSnapshot("[WiFi] Already connected:");
         }
     }
 }
