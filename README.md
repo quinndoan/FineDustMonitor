@@ -22,9 +22,9 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Backend se chay tai:
-- API: http://localhost:8000
-- Swagger docs: http://localhost:8000/docs
-- Health check: http://localhost:8000/api/health
+- API: https://datnmonitorstudents.onrender.com/api
+- Swagger docs: https://datnmonitorstudents.onrender.com/api/docs
+- Health check: https://datnmonitorstudents.onrender.com/api/api/health
 
 ### Ghi chu Google Sheets
 Backend tu fallback sang che do mock neu chua cau hinh Google Sheets.
@@ -61,5 +61,5 @@ Web UI se chay mac dinh tai:
 1. Terminal 1: chay backend o cong `8000`
 2. Terminal 2: chay web_ui o cong `5173`
 
-Mac dinh web_ui dang goi API den `http://localhost:8000/api/students`.
+Mac dinh web_ui dang goi API den `https://datnmonitorstudents.onrender.com/api/api/students`.
 Vi vay hay giu backend chay dung cong `8000` de khong can sua them.

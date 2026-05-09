@@ -8,7 +8,7 @@ import {
 import { useAuth } from '../contexts/auth-context'
 import './dashboard-page.css'
 
-const API_URL = 'http://localhost:8000/api/dashboard/stats'
+const API_URL = 'https://datnmonitorstudents.onrender.com/api/api/dashboard/stats'
 
 /* Shared tooltip style */
 const tooltipStyle = {

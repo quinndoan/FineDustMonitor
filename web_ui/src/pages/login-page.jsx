@@ -4,7 +4,7 @@ import { Mail, Lock, User, ArrowRight, Activity, Building2, Loader2, KeyRound, A
 import { useAuth } from '../contexts/auth-context'
 import './login-page.css'
 
-const API_BASE = 'http://localhost:8000/api/auth'
+const API_BASE = 'https://datnmonitorstudents.onrender.com/api/api/auth'
 
 /**
  * Login / Register / Forgot Password page.

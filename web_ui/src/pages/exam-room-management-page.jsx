@@ -5,7 +5,7 @@ import ExamRoomFormModal from '../components/exam-room-form-modal'
 import { ToastContainer } from '../components/toast-notification'
 import './student-management-page.css' // Reusing styles
 
-const API_URL = 'http://localhost:8000/api/exam-rooms'
+const API_URL = 'https://datnmonitorstudents.onrender.com/api/api/exam-rooms'
 
 function ExamRoomManagementPage() {
   const navigate = useNavigate()
@@ -14,7 +14,7 @@ function ExamRoomManagementPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
-  
+
   const defaultForm = { room_name: '', subject: '', exam_date: '', start_time: '', end_time: '' }
   const [formData, setFormData] = useState(defaultForm)
   const [toasts, setToasts] = useState([])
@@ -59,12 +59,12 @@ function ExamRoomManagementPage() {
 
   const openEdit = (room) => {
     setEditingId(room.id)
-    setFormData({ 
-        room_name: room.room_name, 
-        subject: room.subject, 
-        exam_date: room.exam_date, 
-        start_time: room.start_time, 
-        end_time: room.end_time 
+    setFormData({
+      room_name: room.room_name,
+      subject: room.subject,
+      exam_date: room.exam_date,
+      start_time: room.start_time,
+      end_time: room.end_time
     })
     setIsModalOpen(true)
   }
@@ -76,7 +76,7 @@ function ExamRoomManagementPage() {
       if (editingId) {
         res = await fetch(`${API_URL}/${editingId}`, {
           method: 'PUT',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
@@ -85,7 +85,7 @@ function ExamRoomManagementPage() {
       } else {
         res = await fetch(API_URL, {
           method: 'POST',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
@@ -113,7 +113,7 @@ function ExamRoomManagementPage() {
     if (!window.confirm('Bạn có chắc chắn muốn xóa lớp thi này?')) return
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`${API_URL}/${id}`, { 
+      const res = await fetch(`${API_URL}/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })

@@ -7,7 +7,7 @@ import './student-management-page.css' // Reuse styles
 function ExamRoomDetailPage() {
   const { roomId } = useParams()
   const navigate = useNavigate()
-  
+
   const [roomInfo, setRoomInfo] = useState(null)
   const [students, setStudents] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -34,11 +34,11 @@ function ExamRoomDetailPage() {
     // Realtime WebSocket connection
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const ws = new WebSocket(`${wsProtocol}//localhost:8000/api/exam-rooms/ws/${roomId}`)
-    
+
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data)
       if (data.event === 'student_checked_in') {
-        setStudents(prev => prev.map(s => 
+        setStudents(prev => prev.map(s =>
           s.mssv === data.mssv ? { ...s, attendance_status: data.status } : s
         ))
         // Optional: you can show a toast
@@ -55,8 +55,8 @@ function ExamRoomDetailPage() {
     try {
       const token = localStorage.getItem('token')
       const [resAll, resAssigned] = await Promise.all([
-        fetch('http://localhost:8000/api/devices', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`http://localhost:8000/api/exam-rooms/${roomId}/devices`, { headers: { Authorization: `Bearer ${token}` } })
+        fetch('https://datnmonitorstudents.onrender.com/api/api/devices', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`https://datnmonitorstudents.onrender.com/api/api/exam-rooms/${roomId}/devices`, { headers: { Authorization: `Bearer ${token}` } })
       ])
       if (resAll.ok) setAllDevices(await resAll.json())
       if (resAssigned.ok) setAssignedDevices(await resAssigned.json())
@@ -68,7 +68,7 @@ function ExamRoomDetailPage() {
   const fetchRoomInfo = async () => {
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch('http://localhost:8000/api/exam-rooms', {
+      const res = await fetch('https://datnmonitorstudents.onrender.com/api/api/exam-rooms', {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
@@ -85,7 +85,7 @@ function ExamRoomDetailPage() {
     try {
       setIsLoading(true)
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/exam-rooms/${roomId}/students`, {
+      const res = await fetch(`https://datnmonitorstudents.onrender.com/api/api/exam-rooms/${roomId}/students`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
@@ -104,9 +104,9 @@ function ExamRoomDetailPage() {
 
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/exam-rooms/${roomId}/students`, {
+      const res = await fetch(`https://datnmonitorstudents.onrender.com/api/api/exam-rooms/${roomId}/students`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -135,11 +135,11 @@ function ExamRoomDetailPage() {
     try {
       setIsLoading(true)
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/exam-rooms/${roomId}/students/sync`, {
+      const res = await fetch(`https://datnmonitorstudents.onrender.com/api/api/exam-rooms/${roomId}/students/sync`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ sheet_name: sheetName.trim() })
       })
@@ -160,10 +160,10 @@ function ExamRoomDetailPage() {
 
   const handleRemoveStudent = async (mssv) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa sinh viên ${mssv} khỏi lớp thi này?`)) return
-    
+
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/exam-rooms/${roomId}/students/${mssv}`, {
+      const res = await fetch(`https://datnmonitorstudents.onrender.com/api/api/exam-rooms/${roomId}/students/${mssv}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -186,7 +186,7 @@ function ExamRoomDetailPage() {
     if (!selectedDeviceId) return
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/exam-rooms/${roomId}/devices/${selectedDeviceId}`, {
+      const res = await fetch(`https://datnmonitorstudents.onrender.com/api/api/exam-rooms/${roomId}/devices/${selectedDeviceId}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -195,7 +195,7 @@ function ExamRoomDetailPage() {
         setSelectedDeviceId('')
         fetchDevices()
       } else {
-        const errData = await res.json().catch(()=>null)
+        const errData = await res.json().catch(() => null)
         addToast(errData?.detail || 'Gán thiết bị thất bại', 'error')
       }
     } catch (err) {
@@ -206,7 +206,7 @@ function ExamRoomDetailPage() {
   const handleRemoveDevice = async (deviceId) => {
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/exam-rooms/${roomId}/devices/${deviceId}`, {
+      const res = await fetch(`https://datnmonitorstudents.onrender.com/api/api/exam-rooms/${roomId}/devices/${deviceId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -214,7 +214,7 @@ function ExamRoomDetailPage() {
         addToast('Đã gỡ thiết bị', 'success')
         fetchDevices()
       } else {
-        const errData = await res.json().catch(()=>null)
+        const errData = await res.json().catch(() => null)
         addToast(errData?.detail || 'Gỡ thiết bị thất bại', 'error')
       }
     } catch (err) {
@@ -225,8 +225,8 @@ function ExamRoomDetailPage() {
   return (
     <div className="students-page">
       <div className="page-header students-header">
-        <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-          <button className="icon-btn" onClick={() => navigate('/exam-rooms')} style={{background: 'rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '8px'}}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button className="icon-btn" onClick={() => navigate('/exam-rooms')} style={{ background: 'rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '8px' }}>
             <ArrowLeft size={20} color="#fff" />
           </button>
           <div>
@@ -244,7 +244,7 @@ function ExamRoomDetailPage() {
         <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.1rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Wifi size={18} /> Thiết bị ESP32 điểm danh
         </h3>
-        
+
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           {assignedDevices.map(d => (
             <div key={d.id} style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid #3b82f6', padding: '0.5rem 1rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -258,8 +258,8 @@ function ExamRoomDetailPage() {
         </div>
 
         <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-          <select 
-            value={selectedDeviceId} 
+          <select
+            value={selectedDeviceId}
             onChange={e => setSelectedDeviceId(e.target.value)}
             style={{ padding: '0.75rem', borderRadius: '8px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', color: '#fff', flex: 1, maxWidth: '300px' }}
           >
@@ -321,7 +321,7 @@ function ExamRoomDetailPage() {
                   <td>{s.full_name}</td>
                   <td>
                     <span style={{
-                      padding: '4px 10px', 
+                      padding: '4px 10px',
                       borderRadius: '12px',
                       fontSize: '0.85rem',
                       fontWeight: 600,

@@ -11,7 +11,7 @@ function DeviceManagementPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingDevice, setEditingDevice] = useState(null)
-  
+
   const [deviceId, setDeviceId] = useState('')
   const [name, setName] = useState('')
 
@@ -32,7 +32,7 @@ function DeviceManagementPage() {
     try {
       setIsLoading(true)
       const token = localStorage.getItem('token')
-      const res = await fetch('http://localhost:8000/api/devices', {
+      const res = await fetch('https://datnmonitorstudents.onrender.com/api/api/devices', {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
@@ -74,7 +74,7 @@ function DeviceManagementPage() {
       const token = localStorage.getItem('token')
       if (editingDevice) {
         // Update
-        const res = await fetch(`http://localhost:8000/api/devices/${editingDevice.id}`, {
+        const res = await fetch(`https://datnmonitorstudents.onrender.com/api/api/devices/${editingDevice.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ name: name.trim() })
@@ -84,12 +84,12 @@ function DeviceManagementPage() {
           fetchDevices()
           closeModal()
         } else {
-          const err = await res.json().catch(()=>null)
+          const err = await res.json().catch(() => null)
           addToast(err?.detail || 'Lỗi cập nhật', 'error')
         }
       } else {
         // Create
-        const res = await fetch('http://localhost:8000/api/devices', {
+        const res = await fetch('https://datnmonitorstudents.onrender.com/api/api/devices', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ device_id: deviceId.trim(), name: name.trim() })
@@ -99,7 +99,7 @@ function DeviceManagementPage() {
           fetchDevices()
           closeModal()
         } else {
-          const err = await res.json().catch(()=>null)
+          const err = await res.json().catch(() => null)
           addToast(err?.detail || 'Lỗi thêm mới', 'error')
         }
       }
@@ -112,7 +112,7 @@ function DeviceManagementPage() {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa thiết bị ${name}?`)) return
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/devices/${id}`, {
+      const res = await fetch(`https://datnmonitorstudents.onrender.com/api/api/devices/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -120,7 +120,7 @@ function DeviceManagementPage() {
         addToast('Xóa thiết bị thành công')
         fetchDevices()
       } else {
-        const err = await res.json().catch(()=>null)
+        const err = await res.json().catch(() => null)
         addToast(err?.detail || 'Lỗi xóa', 'error')
       }
     } catch (err) {
@@ -165,9 +165,9 @@ function DeviceManagementPage() {
                   <td style={{ fontWeight: 500 }}>{d.name}</td>
                   <td>
                     {d.assigned_room_id ? (
-                       <span style={{ color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' }}>Đã gán (Room {d.assigned_room_id})</span>
+                      <span style={{ color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' }}>Đã gán (Room {d.assigned_room_id})</span>
                     ) : (
-                       <span style={{ color: '#64748b', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' }}>Trống</span>
+                      <span style={{ color: '#64748b', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' }}>Trống</span>
                     )}
                   </td>
                   <td>
@@ -207,10 +207,10 @@ function DeviceManagementPage() {
             <form onSubmit={handleSubmit}>
               <div className="field-group">
                 <label>Device ID (ESP32 MAC/ID)</label>
-                <input 
-                  type="text" 
-                  placeholder="VD: ROOM_01" 
-                  value={deviceId} 
+                <input
+                  type="text"
+                  placeholder="VD: ROOM_01"
+                  value={deviceId}
                   onChange={e => setDeviceId(e.target.value)}
                   required
                   readOnly={!!editingDevice}
@@ -218,10 +218,10 @@ function DeviceManagementPage() {
               </div>
               <div className="field-group">
                 <label>Tên Thiết bị (Vị trí)</label>
-                <input 
-                  type="text" 
-                  placeholder="VD: Máy quét Cửa trước - D9-101" 
-                  value={name} 
+                <input
+                  type="text"
+                  placeholder="VD: Máy quét Cửa trước - D9-101"
+                  value={name}
                   onChange={e => setName(e.target.value)}
                   required
                 />
