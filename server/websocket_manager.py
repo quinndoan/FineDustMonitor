@@ -1,9 +1,11 @@
 from typing import Dict, List
 from fastapi import WebSocket
+import logging
 
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[int, List[WebSocket]] = {}
+        self.dashboard_connections: List[WebSocket] = []
 
     async def connect(self, websocket: WebSocket, room_id: int):
         await websocket.accept()
@@ -22,5 +24,27 @@ class ConnectionManager:
         if room_id in self.active_connections:
             for connection in self.active_connections[room_id]:
                 await connection.send_json(message)
+
+    # --- Dashboard real-time channel ---
+    async def connect_dashboard(self, websocket: WebSocket):
+        await websocket.accept()
+        self.dashboard_connections.append(websocket)
+        logging.info(f"[WS] Dashboard client connected. Total: {len(self.dashboard_connections)}")
+
+    def disconnect_dashboard(self, websocket: WebSocket):
+        if websocket in self.dashboard_connections:
+            self.dashboard_connections.remove(websocket)
+        logging.info(f"[WS] Dashboard client disconnected. Total: {len(self.dashboard_connections)}")
+
+    async def broadcast_to_dashboard(self, message: dict):
+        """Push event to all connected dashboard clients."""
+        disconnected = []
+        for ws in self.dashboard_connections:
+            try:
+                await ws.send_json(message)
+            except Exception:
+                disconnected.append(ws)
+        for ws in disconnected:
+            self.disconnect_dashboard(ws)
 
 manager = ConnectionManager()

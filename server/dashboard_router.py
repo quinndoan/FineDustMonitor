@@ -4,7 +4,9 @@ Provides aggregated data for the dashboard from real database records.
 """
 from datetime import date, datetime, timedelta
 
-from fastapi import APIRouter, Depends
+import logging
+
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy import func, cast, Date
 from sqlalchemy.orm import Session
 
@@ -14,8 +16,26 @@ from models import (
     AttendanceStatus, ScanLog, User,
 )
 from auth_service import get_current_user
+from websocket_manager import manager
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
+
+
+@router.websocket("/ws")
+async def dashboard_ws(websocket: WebSocket):
+    """WebSocket endpoint for real-time dashboard updates.
+    When a scan event occurs, server pushes {event: 'new_scan'} so
+    the frontend can immediately re-fetch stats without waiting for polling.
+    """
+    await manager.connect_dashboard(websocket)
+    try:
+        while True:
+            # Keep connection alive; client doesn't need to send data
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect_dashboard(websocket)
+    except Exception:
+        manager.disconnect_dashboard(websocket)
 
 
 @router.get("/stats")
@@ -31,7 +51,8 @@ def get_dashboard_stats(
     - Scan activity over the last 7 days
     - Recent scan events
     """
-    today = date.today()
+    # Use UTC to match ScanLog.scanned_at which stores datetime.utcnow()
+    today = datetime.utcnow().date()
     today_start = datetime.combine(today, datetime.min.time())
     today_end = datetime.combine(today, datetime.max.time())
 
@@ -122,7 +143,7 @@ def get_dashboard_stats(
             "result": s.result,
             "student_mssv": s.student_mssv,
             "student_name": s.student_name,
-            "scanned_at": s.scanned_at.isoformat() if s.scanned_at else None,
+            "scanned_at": (s.scanned_at.isoformat() + "Z") if s.scanned_at else None,
         }
         for s in recent_scans
     ]

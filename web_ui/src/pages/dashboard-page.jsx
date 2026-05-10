@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Users, Cpu, ScanLine, DoorOpen, Loader2, RefreshCw, Clock } from 'lucide-react'
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/auth-context'
 import './dashboard-page.css'
 
 const API_URL = 'http://localhost:8000/api/dashboard/stats'
+const WS_URL = 'ws://localhost:8000/api/dashboard/ws'
 
 /* Shared tooltip style */
 const tooltipStyle = {
@@ -38,8 +39,9 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const { token } = useAuth()
+  const wsRef = useRef(null)
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
@@ -54,14 +56,60 @@ function DashboardPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token])
 
   useEffect(() => {
     fetchStats()
-    // Auto-refresh every 30s
+    // Fallback: auto-refresh every 30s
     const interval = setInterval(fetchStats, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [fetchStats])
+
+  // WebSocket for real-time updates
+  useEffect(() => {
+    let ws = null
+    let reconnectTimer = null
+
+    const connect = () => {
+      ws = new WebSocket(WS_URL)
+      wsRef.current = ws
+
+      ws.onopen = () => {
+        console.log('[Dashboard WS] Connected')
+      }
+
+      ws.onmessage = (evt) => {
+        try {
+          const msg = JSON.parse(evt.data)
+          if (msg.event === 'new_scan') {
+            // Immediately refresh dashboard data
+            fetchStats()
+          }
+        } catch (e) {
+          // ignore parse errors
+        }
+      }
+
+      ws.onclose = () => {
+        console.log('[Dashboard WS] Disconnected, reconnecting in 3s...')
+        reconnectTimer = setTimeout(connect, 3000)
+      }
+
+      ws.onerror = () => {
+        ws.close()
+      }
+    }
+
+    connect()
+
+    return () => {
+      if (reconnectTimer) clearTimeout(reconnectTimer)
+      if (ws) {
+        ws.onclose = null // prevent reconnect on intentional close
+        ws.close()
+      }
+    }
+  }, [fetchStats])
 
   if (loading && !stats) {
     return (

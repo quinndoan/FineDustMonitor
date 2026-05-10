@@ -144,7 +144,7 @@ def process_scan(device_id: str, scan_type: str, data: dict):
                     }
                     mqtt_client.publish(f"monitor_student/{device_id}/cmd", json.dumps(response))
 
-                # Broadcast websocket
+                # Broadcast websocket — exam room detail
                 if main_loop:
                     import asyncio
                     from websocket_manager import manager
@@ -153,6 +153,15 @@ def process_scan(device_id: str, scan_type: str, data: dict):
                             "event": "student_checked_in",
                             "mssv": student.mssv,
                             "status": "PRESENT"
+                        }),
+                        main_loop
+                    )
+                    # Broadcast websocket — dashboard real-time update
+                    asyncio.run_coroutine_threadsafe(
+                        manager.broadcast_to_dashboard({
+                            "event": "new_scan",
+                            "scan_type": scan_type,
+                            "result": "accepted",
                         }),
                         main_loop
                     )
@@ -169,6 +178,18 @@ def process_scan(device_id: str, scan_type: str, data: dict):
                 if mqtt_client:
                     response = {"action": "verify_result", "status": "denied", "message": "Not in room"}
                     mqtt_client.publish(f"monitor_student/{device_id}/cmd", json.dumps(response))
+                # Broadcast websocket — dashboard real-time update
+                if main_loop:
+                    import asyncio
+                    from websocket_manager import manager
+                    asyncio.run_coroutine_threadsafe(
+                        manager.broadcast_to_dashboard({
+                            "event": "new_scan",
+                            "scan_type": scan_type,
+                            "result": "denied",
+                        }),
+                        main_loop
+                    )
         else:
             logging.warning(f"[MQTT] Student not found in DB for scan data: {data}")
             # Log denied scan — student not found
@@ -181,6 +202,18 @@ def process_scan(device_id: str, scan_type: str, data: dict):
             if mqtt_client:
                 response = {"action": "verify_result", "status": "denied", "message": "Not found"}
                 mqtt_client.publish(f"monitor_student/{device_id}/cmd", json.dumps(response))
+            # Broadcast websocket — dashboard real-time update
+            if main_loop:
+                import asyncio
+                from websocket_manager import manager
+                asyncio.run_coroutine_threadsafe(
+                    manager.broadcast_to_dashboard({
+                        "event": "new_scan",
+                        "scan_type": scan_type,
+                        "result": "denied",
+                    }),
+                    main_loop
+                )
             
     finally:
         db.close()
