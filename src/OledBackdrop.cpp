@@ -120,24 +120,25 @@ void showFlashConfig(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2,
   }
   drawSmartText(u8g2, 0, y, "Pass: ", maskedPass);
 
-  // --- HIỂN THỊ TRẠNG THÁI WIFI ---
+  // --- HIỂN THỊ TRẠNG THÁI WIFI (đọc real-time từ WiFi.status()) ---
   u8g2.setCursor(0, y);
   u8g2.print("WiFi: ");
   if (!configMgr.params.wifiEnabled) {
     u8g2.print("OFF");
   } else {
-    if (wifiStatus) {
+    // Đọc trực tiếp trạng thái WiFi hiện tại thay vì dùng biến cache
+    if (WiFi.status() == WL_CONNECTED) {
       u8g2.print(WiFi.localIP().toString());
     } else {
       u8g2.print("fail [X]");
     }
   }
 
-  // Thêm thông tin hiển thị
+  // --- HIỂN THỊ TRẠNG THÁI MQTT ---
+  y += 12;
+  u8g2.setCursor(0, y);
   if (moretext != NULL) {
-    y += 12;
-    u8g2.setCursor(0, y);
-    u8g2.println(moretext);
+    u8g2.print(moretext);
   }
 
   u8g2.sendBuffer();

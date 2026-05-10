@@ -322,7 +322,7 @@ void setup() {
 void renderCurrentMode() {
   if (g_mode == MODE_INFO) {
     showFlashConfig(
-        u8g2, (mqttMgr.isLastConnectionToBrokerOk() ? "MQTT Ok" : "MQTT dis"));
+        u8g2, (mqttMgr.connected() ? "MQTT: Connected" : "MQTT: Disconnected"));
   } else if (g_mode == MODE_IMMEDIATE) {
     displayData();
   } else if (g_mode == MODE_PLOT) {
