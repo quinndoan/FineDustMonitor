@@ -3,7 +3,7 @@ import { Calendar, Loader2, DoorOpen, Clock } from 'lucide-react'
 import './student-management-page.css' // Reuse styles
 import './exam-schedule-page.css'
 
-const API_URL = 'https://datnmonitorstudents.onrender.com/api/api/exam-rooms'
+const API_URL = 'http://localhost:8000/api/exam-rooms'
 
 function ExamSchedulePage() {
   const [rooms, setRooms] = useState([])
@@ -40,7 +40,7 @@ function ExamSchedulePage() {
       </div>
 
       <div className="search-bar schedule-filter">
-        <Calendar size={18} className="search-icon" style={{ color: '#6366f1' }} />
+        <Calendar size={18} className="search-icon" style={{color: '#6366f1'}} />
         <input
           type="date"
           value={filterDate}
@@ -54,15 +54,15 @@ function ExamSchedulePage() {
 
       <div className="schedule-grid">
         {isLoading ? (
-          <div className="loading-state" style={{ gridColumn: '1 / -1' }}>
+          <div className="loading-state" style={{gridColumn: '1 / -1'}}>
             <Loader2 size={28} className="spin" />
             <span>Đang tải lịch thi...</span>
           </div>
         ) : rooms.length === 0 ? (
-          <div className="empty-state" style={{ gridColumn: '1 / -1', padding: '4rem' }}>
-            <DoorOpen size={48} style={{ opacity: 0.5, marginBottom: '1rem' }} />
+          <div className="empty-state" style={{gridColumn: '1 / -1', padding: '4rem'}}>
+            <DoorOpen size={48} style={{opacity: 0.5, marginBottom: '1rem'}} />
             <h3>Không có lớp thi nào</h3>
-            <p style={{ color: '#64748b' }}>Không tìm thấy lớp thi nào cho ngày đã chọn.</p>
+            <p style={{color: '#64748b'}}>Không tìm thấy lớp thi nào cho ngày đã chọn.</p>
           </div>
         ) : (
           rooms.map((r) => (

@@ -4,7 +4,7 @@ import StudentFormModal from '../components/student-form-modal'
 import { ToastContainer } from '../components/toast-notification'
 import './student-management-page.css'
 
-const API_URL = 'https://datnmonitorstudents.onrender.com/api/api/students'
+const API_URL = 'http://localhost:8000/api/students'
 
 /**
  * Student management page with full CRUD operations.
@@ -72,7 +72,7 @@ function StudentManagementPage() {
       if (editingMssv) {
         res = await fetch(`${API_URL}/${editingMssv}`, {
           method: 'PUT',
-          headers: {
+          headers: { 
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
@@ -81,7 +81,7 @@ function StudentManagementPage() {
       } else {
         res = await fetch(API_URL, {
           method: 'POST',
-          headers: {
+          headers: { 
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
@@ -109,7 +109,7 @@ function StudentManagementPage() {
     if (!window.confirm('Bạn có chắc chắn muốn xóa sinh viên này?')) return
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`${API_URL}/${mssv}`, {
+      const res = await fetch(`${API_URL}/${mssv}`, { 
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -131,7 +131,7 @@ function StudentManagementPage() {
     try {
       setIsLoading(true)
       const token = localStorage.getItem('token')
-      const res = await fetch(`${API_URL}/sync-from-sheets`, {
+      const res = await fetch(`${API_URL}/sync-from-sheets`, { 
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       })
