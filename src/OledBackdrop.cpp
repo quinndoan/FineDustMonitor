@@ -235,8 +235,8 @@ void drawVietnameseNameCompact(U8G2_SH1106_128X64_NONAME_F_HW_I2C &u8g2,
     if (splitIdx != -1) {
       String l1 = studentName.substring(0, splitIdx);
       String l2 = studentName.substring(splitIdx + 1);
-      u8g2.drawUTF8(5, 40, l1.c_str());
-      u8g2.drawUTF8(5, 52, l2.c_str());
+      u8g2.drawUTF8(5, 38, l1.c_str());
+      u8g2.drawUTF8(5, 55, l2.c_str());
     } else {
       // Không tìm được chỗ cắt → in 1 dòng cắt bớt
       u8g2.drawUTF8(5, 40, studentName.c_str());
