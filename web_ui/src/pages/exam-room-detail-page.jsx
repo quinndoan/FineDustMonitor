@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, UserPlus, Trash2, Loader2, Users, CloudDownload, Wifi } from 'lucide-react'
 import { ToastContainer } from '../components/toast-notification'
 import './student-management-page.css' // Reuse styles
+import './exam-room-detail-page.css'
 
 function ExamRoomDetailPage() {
   const { roomId } = useParams()
@@ -41,8 +42,6 @@ function ExamRoomDetailPage() {
         setStudents(prev => prev.map(s => 
           s.mssv === data.mssv ? { ...s, attendance_status: data.status } : s
         ))
-        // Optional: you can show a toast
-        // addToast(`Sinh viên ${data.mssv} điểm danh thành công!`, 'success')
       }
     }
 
@@ -222,17 +221,25 @@ function ExamRoomDetailPage() {
     }
   }
 
+  // Count attendance stats
+  const presentCount = students.filter(s => s.attendance_status === 'PRESENT').length
+  const absentCount = students.length - presentCount
+
   return (
     <div className="students-page">
+      {/* Header with back button */}
       <div className="page-header students-header">
-        <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-          <button className="icon-btn" onClick={() => navigate('/exam-rooms')} style={{background: 'rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '8px'}}>
-            <ArrowLeft size={20} color="#fff" />
+        <div className="detail-header-left">
+          <button className="back-btn" onClick={() => navigate('/exam-rooms')} title="Quay lại">
+            <ArrowLeft size={20} />
           </button>
           <div>
             <h1>Chi tiết Lớp thi</h1>
             {roomInfo ? (
-              <p>Phòng: {roomInfo.room_name} - Môn: {roomInfo.subject} ({new Date(roomInfo.exam_date).toLocaleDateString('vi-VN')})</p>
+              <p className="detail-subtitle">
+                <span className="detail-room-badge">{roomInfo.room_name}</span>
+                {roomInfo.subject} — {new Date(roomInfo.exam_date).toLocaleDateString('vi-VN')}
+              </p>
             ) : (
               <p>Đang tải thông tin lớp thi...</p>
             )}
@@ -240,28 +247,49 @@ function ExamRoomDetailPage() {
         </div>
       </div>
 
-      <div className="device-assignment-card" style={{ background: 'var(--card-bg)', padding: '1.5rem', borderRadius: '16px', marginBottom: '1.5rem', border: '1px solid var(--border-color)' }}>
-        <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.1rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      {/* Attendance Summary */}
+      {!isLoading && students.length > 0 && (
+        <div className="attendance-summary">
+          <div className="attendance-stat present">
+            <span className="attendance-value">{presentCount}</span>
+            <span className="attendance-label">Có mặt</span>
+          </div>
+          <div className="attendance-stat absent">
+            <span className="attendance-value">{absentCount}</span>
+            <span className="attendance-label">Vắng</span>
+          </div>
+          <div className="attendance-stat total">
+            <span className="attendance-value">{students.length}</span>
+            <span className="attendance-label">Tổng SV</span>
+          </div>
+        </div>
+      )}
+
+      {/* Device Assignment Card */}
+      <div className="device-assignment-card">
+        <h3 className="device-card-title">
           <Wifi size={18} /> Thiết bị ESP32 điểm danh
         </h3>
         
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+        <div className="device-chips">
           {assignedDevices.map(d => (
-            <div key={d.id} style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid #3b82f6', padding: '0.5rem 1rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ color: '#60a5fa', fontWeight: 600 }}>{d.name} ({d.device_id})</span>
-              <button onClick={() => handleRemoveDevice(d.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }} title="Gỡ thiết bị">
-                <Trash2 size={16} />
+            <div key={d.id} className="device-chip">
+              <span className="device-chip-name">{d.name} ({d.device_id})</span>
+              <button onClick={() => handleRemoveDevice(d.id)} className="device-chip-remove" title="Gỡ thiết bị">
+                <Trash2 size={14} />
               </button>
             </div>
           ))}
-          {assignedDevices.length === 0 && <span style={{ color: 'var(--text-secondary)', padding: '0.5rem 0' }}>Chưa có thiết bị nào được gán cho phòng này.</span>}
+          {assignedDevices.length === 0 && (
+            <span className="device-empty-text">Chưa có thiết bị nào được gán cho phòng này.</span>
+          )}
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+        <div className="device-assign-row">
           <select 
             value={selectedDeviceId} 
             onChange={e => setSelectedDeviceId(e.target.value)}
-            style={{ padding: '0.75rem', borderRadius: '8px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', color: '#fff', flex: 1, maxWidth: '300px' }}
+            className="device-select"
           >
             <option value="">-- Chọn thiết bị chưa sử dụng --</option>
             {allDevices.filter(d => d.assigned_room_id !== parseInt(roomId)).map(d => (
@@ -274,26 +302,28 @@ function ExamRoomDetailPage() {
         </div>
       </div>
 
-      <div className="search-bar" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        <form onSubmit={handleAddStudent} style={{ display: 'flex', flex: 1, gap: '1rem' }}>
+      {/* Add student form */}
+      <div className="add-student-bar">
+        <form onSubmit={handleAddStudent} className="add-student-form">
           <input
             type="text"
             placeholder="Nhập MSSV để thêm vào lớp thi..."
             value={newMssv}
             onChange={(e) => setNewMssv(e.target.value)}
-            style={{ flex: 1 }}
+            className="add-student-input"
           />
-          <button type="submit" className="btn-add" style={{ padding: '0 1.5rem', height: '100%' }}>
+          <button type="submit" className="btn-add">
             <UserPlus size={18} />
             Thêm
           </button>
         </form>
-        <button onClick={handleSyncSheets} className="btn-add" style={{ background: '#10b981', height: '100%', whiteSpace: 'nowrap' }}>
+        <button onClick={handleSyncSheets} className="btn-add btn-outline">
           <CloudDownload size={18} />
           Thêm từ Sheets
         </button>
       </div>
 
+      {/* Student table */}
       <div className="table-card">
         {isLoading ? (
           <div className="loading-state">
@@ -309,7 +339,7 @@ function ExamRoomDetailPage() {
                 <th>Mã thẻ (Card ID)</th>
                 <th>Họ và Tên</th>
                 <th>Trạng thái điểm danh</th>
-                <th style={{ width: 100, textAlign: 'center' }}>Thao tác</th>
+                <th style={{ width: 80, textAlign: 'center' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -320,14 +350,8 @@ function ExamRoomDetailPage() {
                   <td className="rfid-cell">{s.card_id}</td>
                   <td>{s.full_name}</td>
                   <td>
-                    <span style={{
-                      padding: '4px 10px', 
-                      borderRadius: '12px',
-                      fontSize: '0.85rem',
-                      fontWeight: 600,
-                      background: s.attendance_status === 'PRESENT' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                      color: s.attendance_status === 'PRESENT' ? '#4ade80' : '#f87171'
-                    }}>
+                    <span className={`status-badge ${s.attendance_status === 'PRESENT' ? 'active' : 'blocked'}`}>
+                      <span className="status-dot" />
                       {s.attendance_status === 'PRESENT' ? 'Có mặt' : 'Vắng'}
                     </span>
                   </td>
@@ -343,8 +367,12 @@ function ExamRoomDetailPage() {
               {students.length === 0 && (
                 <tr>
                   <td colSpan="6" className="empty-state">
-                    <Users size={40} />
-                    <span>Chưa có sinh viên nào trong lớp thi này. Hãy nhập MSSV để thêm.</span>
+                    <div className="empty-state-content">
+                      <div className="empty-state-icon">
+                        <Users size={28} />
+                      </div>
+                      <span>Chưa có sinh viên nào trong lớp thi này. Hãy nhập MSSV để thêm.</span>
+                    </div>
                   </td>
                 </tr>
               )}

@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Edit2, Trash2, Search, Loader2, DoorOpen, Users, CloudDownload } from 'lucide-react'
+import { Plus, Edit2, Trash2, Search, Loader2, DoorOpen, Users, CloudDownload, ChevronLeft, ChevronRight } from 'lucide-react'
 import ExamRoomFormModal from '../components/exam-room-form-modal'
 import { ToastContainer } from '../components/toast-notification'
 import './student-management-page.css' // Reusing styles
 
 const API_URL = 'http://localhost:8000/api/exam-rooms'
+const PAGE_SIZE_OPTIONS = [10, 20, 50]
 
 function ExamRoomManagementPage() {
   const navigate = useNavigate()
@@ -18,6 +19,10 @@ function ExamRoomManagementPage() {
   const defaultForm = { room_name: '', subject: '', exam_date: '', start_time: '', end_time: '' }
   const [formData, setFormData] = useState(defaultForm)
   const [toasts, setToasts] = useState([])
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const addToast = useCallback((message, type = 'success') => {
     const id = Date.now()
@@ -135,6 +140,24 @@ function ExamRoomManagementPage() {
     r.subject.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  // Reset page on search
+  useEffect(() => { setCurrentPage(1) }, [searchTerm])
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const startIdx = (currentPage - 1) * pageSize
+  const paginatedData = filtered.slice(startIdx, startIdx + pageSize)
+
+  const pageNumbers = (() => {
+    const pages = []
+    const maxVisible = 5
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2))
+    let end = Math.min(totalPages, start + maxVisible - 1)
+    if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1)
+    for (let i = start; i <= end; i++) pages.push(i)
+    return pages
+  })()
+
   const handleSyncSheets = async () => {
     if (!window.confirm('Đồng bộ sẽ quét tất cả tab có prefix "LichThi_" (vd: LichThi_1, LichThi_2) từ Google Sheets. Tiếp tục?')) return
     try {
@@ -165,8 +188,8 @@ function ExamRoomManagementPage() {
         <div>
           <h1>Quản lý Lớp thi</h1>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn-add" onClick={handleSyncSheets} style={{ background: '#10b981' }}>
+        <div className="header-actions">
+          <button className="btn-add btn-outline" onClick={handleSyncSheets}>
             <CloudDownload size={18} />
             Thêm từ Sheets
           </button>
@@ -187,6 +210,13 @@ function ExamRoomManagementPage() {
         />
       </div>
 
+      {/* Record count */}
+      {!isLoading && (
+        <div className="table-count">
+          Hiển thị <strong>{paginatedData.length}</strong> / <strong>{filtered.length}</strong> lớp thi
+        </div>
+      )}
+
       <div className="table-card">
         {isLoading ? (
           <div className="loading-state">
@@ -194,50 +224,82 @@ function ExamRoomManagementPage() {
             <span>Đang tải dữ liệu...</span>
           </div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Phòng thi</th>
-                <th>Môn thi</th>
-                <th>Ngày thi</th>
-                <th>Thời gian</th>
-                <th style={{ width: 100, textAlign: 'center' }}>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((r) => (
-                <tr key={r.id}>
-                  <td className="mssv-cell">{r.room_name}</td>
-                  <td>{r.subject}</td>
-                  <td>{new Date(r.exam_date).toLocaleDateString('vi-VN')}</td>
-                  <td>{r.start_time.slice(0, 5)} - {r.end_time.slice(0, 5)}</td>
-                  <td>
-                    <div className="row-actions">
-                      <button className="icon-btn" onClick={() => navigate(`/exam-rooms/${r.id}`)} title="Danh sách sinh viên" style={{ color: '#8b5cf6' }}>
-                        <Users size={16} />
-                      </button>
-                      <button className="icon-btn edit" onClick={() => openEdit(r)} title="Sửa">
-                        <Edit2 size={16} />
-                      </button>
-                      <button className="icon-btn delete" onClick={() => handleDelete(r.id)} title="Xóa">
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
+          <>
+            <table>
+              <thead>
                 <tr>
-                  <td colSpan="5" className="empty-state">
-                    <DoorOpen size={40} />
-                    <span>
-                      {searchTerm ? 'Không tìm thấy kết quả' : 'Chưa có lớp thi nào'}
-                    </span>
-                  </td>
+                  <th>Phòng thi</th>
+                  <th>Môn thi</th>
+                  <th>Ngày thi</th>
+                  <th>Thời gian</th>
+                  <th style={{ width: 120, textAlign: 'center' }}>Thao tác</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {paginatedData.map((r) => (
+                  <tr key={r.id}>
+                    <td className="mssv-cell">{r.room_name}</td>
+                    <td>{r.subject}</td>
+                    <td>{new Date(r.exam_date).toLocaleDateString('vi-VN')}</td>
+                    <td style={{ fontVariantNumeric: 'tabular-nums' }}>{r.start_time.slice(0, 5)} - {r.end_time.slice(0, 5)}</td>
+                    <td>
+                      <div className="row-actions">
+                        <button className="icon-btn edit" onClick={() => navigate(`/exam-rooms/${r.id}`)} title="Danh sách sinh viên" style={{ color: '#8b5cf6' }}>
+                          <Users size={16} />
+                        </button>
+                        <button className="icon-btn edit" onClick={() => openEdit(r)} title="Sửa">
+                          <Edit2 size={16} />
+                        </button>
+                        <button className="icon-btn delete" onClick={() => handleDelete(r.id)} title="Xóa">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="empty-state">
+                      <div className="empty-state-content">
+                        <div className="empty-state-icon">
+                          <DoorOpen size={28} />
+                        </div>
+                        <span>
+                          {searchTerm ? 'Không tìm thấy kết quả' : 'Chưa có lớp thi nào'}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+
+            {/* Pagination */}
+            {filtered.length > 0 && (
+              <div className="table-pagination">
+                <div className="pagination-info">
+                  Trang {currentPage} / {totalPages}
+                  <select
+                    className="page-size-select"
+                    value={pageSize}
+                    onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1) }}
+                    style={{ marginLeft: '0.75rem' }}
+                  >
+                    {PAGE_SIZE_OPTIONS.map((size) => (
+                      <option key={size} value={size}>{size} / trang</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="pagination-controls">
+                  <button className="pagination-btn" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft size={16} /></button>
+                  {pageNumbers.map(num => (
+                    <button key={num} className={`pagination-btn${num === currentPage ? ' active' : ''}`} onClick={() => setCurrentPage(num)}>{num}</button>
+                  ))}
+                  <button className="pagination-btn" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight size={16} /></button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

@@ -1,11 +1,11 @@
-/* ===== Login Page ===== */
+/* ===== Login Page — Polished ===== */
 
 .login-container {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #060a13;
+  background: var(--bg-primary);
   position: relative;
   overflow: hidden;
 }
@@ -22,7 +22,7 @@
 .orb-1 {
   width: 400px;
   height: 400px;
-  background: #6366f1;
+  background: var(--accent-primary);
   top: -100px;
   left: -100px;
 }
@@ -30,7 +30,7 @@
 .orb-2 {
   width: 350px;
   height: 350px;
-  background: #8b5cf6;
+  background: var(--accent-secondary);
   bottom: -80px;
   right: -80px;
   animation-delay: -3s;
@@ -39,7 +39,7 @@
 .orb-3 {
   width: 250px;
   height: 250px;
-  background: #3b82f6;
+  background: var(--info);
   top: 50%;
   left: 60%;
   animation-delay: -5s;
@@ -54,16 +54,17 @@
 /* --- Card --- */
 .login-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 430px;
   background: rgba(15, 23, 42, 0.8);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-xl);
   padding: 2.5rem;
   position: relative;
   z-index: 1;
-  animation: slideUp 0.5s ease;
+  animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: var(--shadow-lg), 0 0 60px rgba(99, 102, 241, 0.06);
 }
 
 /* --- Header --- */
@@ -75,24 +76,26 @@
 .login-logo {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  border-radius: 16px;
+  background: var(--accent-gradient);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   margin: 0 auto 1rem;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
 }
 
 .login-header h1 {
   font-size: 1.5rem;
-  font-weight: 700;
-  color: #f1f5f9;
+  font-weight: 800;
+  color: var(--text-primary);
   margin: 0 0 0.5rem;
+  letter-spacing: -0.5px;
 }
 
 .login-header p {
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 0.875rem;
 }
 
@@ -100,7 +103,7 @@
 .tab-switcher {
   display: flex;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 4px;
   margin-bottom: 1.5rem;
 }
@@ -110,18 +113,24 @@
   padding: 0.6rem;
   border: none;
   background: transparent;
-  color: #64748b;
+  color: var(--text-muted);
   font-weight: 600;
   font-size: 0.875rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.25s ease;
-  font-family: 'Inter', sans-serif;
+  transition: all var(--transition-normal);
+  font-family: var(--font-sans);
+}
+
+.tab:hover:not(.active) {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .tab.active {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: var(--accent-gradient);
   color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
 }
 
 /* --- Form Inputs --- */
@@ -135,8 +144,13 @@
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #475569;
+  color: var(--text-dim);
   pointer-events: none;
+  transition: color var(--transition-fast);
+}
+
+.input-group:focus-within .input-icon {
+  color: var(--accent-primary);
 }
 
 .input-group input,
@@ -144,21 +158,21 @@
   width: 100%;
   padding: 0.85rem 0.85rem 0.85rem 2.75rem;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  color: #f1f5f9;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
   font-size: 0.9rem;
   box-sizing: border-box;
-  transition: all 0.2s ease;
-  font-family: 'Inter', sans-serif;
-  appearance: none; /* remove default arrow for select */
+  transition: all var(--transition-normal);
+  font-family: var(--font-sans);
+  appearance: none;
 }
 
 /* Add custom arrow for select */
 .select-group::after {
   content: '▼';
   font-size: 0.7rem;
-  color: #475569;
+  color: var(--text-dim);
   position: absolute;
   right: 14px;
   top: 50%;
@@ -169,31 +183,31 @@
 .input-group input:focus,
 .input-group select:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--accent-primary);
   background: rgba(255, 255, 255, 0.06);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 .input-group input::placeholder {
-  color: #475569;
+  color: var(--text-dim);
 }
 
 .input-group select.placeholder-select {
-  color: #475569;
+  color: var(--text-dim);
 }
 
 .input-group select option {
-  background-color: #0f172a;
-  color: #f1f5f9;
+  background-color: var(--bg-card-solid);
+  color: var(--text-primary);
 }
 
 /* --- Submit Button --- */
 .login-btn {
   width: 100%;
   padding: 0.85rem;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: var(--accent-gradient);
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   color: white;
   font-weight: 600;
   font-size: 0.95rem;
@@ -202,9 +216,11 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
   margin-top: 0.5rem;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
+  position: relative;
+  overflow: hidden;
 }
 
 .login-btn:hover {
@@ -212,14 +228,25 @@
   box-shadow: 0 8px 25px rgba(99, 102, 241, 0.35);
 }
 
+.login-btn:active {
+  transform: translateY(0);
+}
+
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 /* --- Forgot Password --- */
 .forgot-link {
   text-align: center;
-  color: #6366f1;
+  color: var(--accent-primary);
   font-size: 0.85rem;
   margin-top: 1.25rem;
   cursor: pointer;
-  transition: color 0.2s;
+  transition: color var(--transition-fast);
 }
 
 .forgot-link:hover {
@@ -234,32 +261,15 @@
 
 /* --- Error Message --- */
 .login-error {
-  background: rgba(239, 68, 68, 0.12);
+  background: var(--danger-bg);
   border: 1px solid rgba(239, 68, 68, 0.3);
   color: #fca5a5;
   padding: 0.75rem 1rem;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-size: 0.85rem;
   margin-bottom: 1rem;
   text-align: center;
   animation: slideUp 0.3s ease;
-}
-
-/* --- Loading Spinner --- */
-.spin {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-.login-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
 }
 
 /* ===== Forgot Password Overlay ===== */
@@ -274,24 +284,25 @@
   align-items: center;
   justify-content: center;
   z-index: 100;
-  animation: fadeIn 0.25s ease;
+  animation: forgotFadeIn 0.25s ease;
 }
 
-@keyframes fadeIn {
+@keyframes forgotFadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
 
 .forgot-card {
   width: 100%;
-  max-width: 420px;
-  background: rgba(15, 23, 42, 0.92);
+  max-width: 430px;
+  background: var(--bg-elevated);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-xl);
   padding: 2.5rem;
-  animation: slideUp 0.4s ease;
+  animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: var(--shadow-lg);
 }
 
 .forgot-header {
@@ -302,8 +313,8 @@
 .forgot-icon {
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  border-radius: 16px;
+  background: var(--accent-gradient);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -317,7 +328,7 @@
 }
 
 .forgot-icon.done-icon {
-  background: linear-gradient(135deg, #10b981, #34d399);
+  background: linear-gradient(135deg, var(--success), var(--success-light));
   width: 68px;
   height: 68px;
   border-radius: 50%;
@@ -331,12 +342,12 @@
 .forgot-header h2 {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--text-primary);
   margin: 0 0 0.5rem;
 }
 
 .forgot-header p {
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 0.85rem;
   margin: 0;
 }
@@ -351,15 +362,16 @@
   font-size: 1.2rem !important;
   text-align: center;
   font-weight: 600;
+  font-family: var(--font-mono);
 }
 
 /* Success message */
 .forgot-success {
-  background: rgba(16, 185, 129, 0.12);
+  background: var(--success-bg);
   border: 1px solid rgba(16, 185, 129, 0.3);
   color: #6ee7b7;
   padding: 0.75rem 1rem;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-size: 0.85rem;
   margin-bottom: 1rem;
   text-align: center;
@@ -376,19 +388,18 @@
   padding: 0.65rem;
   margin-top: 1rem;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  color: #94a3b8;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: 'Inter', sans-serif;
+  transition: all var(--transition-normal);
+  font-family: var(--font-sans);
 }
 
 .forgot-back-btn:hover {
   background: rgba(255, 255, 255, 0.04);
-  color: #e2e8f0;
-  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
 }
-

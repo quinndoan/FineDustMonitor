@@ -1,0 +1,277 @@
+/* ===== Exam Room Detail Page ===== */
+
+/* --- Header with back button --- */
+.detail-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.back-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  flex-shrink: 0;
+}
+
+.back-btn:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateX(-2px);
+}
+
+.detail-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.detail-room-badge {
+  background: rgba(139, 92, 246, 0.15);
+  color: #c4b5fd;
+  padding: 0.15rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* --- Attendance Summary --- */
+.attendance-summary {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  animation: fadeInUp 0.4s ease both;
+}
+
+.attendance-stat {
+  flex: 1;
+  max-width: 180px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  transition: all var(--transition-normal);
+}
+
+.attendance-stat:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+}
+
+.attendance-stat.present {
+  border-left: 3px solid var(--success);
+}
+
+.attendance-stat.absent {
+  border-left: 3px solid var(--danger);
+}
+
+.attendance-stat.total {
+  border-left: 3px solid var(--accent-primary);
+}
+
+.attendance-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.attendance-stat.present .attendance-value { color: var(--success-light); }
+.attendance-stat.absent .attendance-value { color: var(--danger-light); }
+.attendance-stat.total .attendance-value { color: #818cf8; }
+
+.attendance-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* --- Device Assignment Card --- */
+.device-assignment-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: border-color var(--transition-normal);
+  animation: fadeInUp 0.4s ease 0.05s both;
+}
+
+.device-assignment-card:hover {
+  border-color: var(--border-hover);
+}
+
+.device-card-title {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.device-chips {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  min-height: 36px;
+  align-items: center;
+}
+
+.device-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-normal);
+}
+
+.device-chip:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.1);
+}
+
+.device-chip-name {
+  color: #60a5fa;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.device-chip-remove {
+  background: transparent;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+
+.device-chip-remove:hover {
+  color: var(--danger-light);
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.device-empty-text {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 0.25rem 0;
+}
+
+.device-assign-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  align-items: center;
+}
+
+.device-select {
+  flex: 1;
+  max-width: 360px;
+  padding: 0.7rem 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+
+.device-select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.device-select option {
+  background: #1e293b;
+  color: var(--text-primary);
+}
+
+/* --- Add Student Bar --- */
+.add-student-bar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  align-items: stretch;
+  animation: fadeInUp 0.4s ease 0.1s both;
+}
+
+.add-student-form {
+  display: flex;
+  flex: 1;
+  gap: 0.75rem;
+}
+
+.add-student-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: var(--font-sans);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.add-student-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.add-student-input::placeholder {
+  color: var(--text-dim);
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .attendance-summary {
+    flex-wrap: wrap;
+  }
+
+  .attendance-stat {
+    max-width: none;
+  }
+
+  .add-student-bar {
+    flex-direction: column;
+  }
+
+  .device-assign-row {
+    flex-direction: column;
+  }
+
+  .device-select {
+    max-width: none;
+  }
+}

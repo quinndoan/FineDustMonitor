@@ -133,7 +133,9 @@ function DeviceManagementPage() {
       <div className="page-header students-header">
         <div>
           <h1>Quản lý Thiết bị (ESP32)</h1>
-          <p>Thêm, sửa, xóa và theo dõi trạng thái các thiết bị quét thẻ</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+            Thêm, sửa, xóa và theo dõi trạng thái các thiết bị quét thẻ
+          </p>
         </div>
         <button className="btn-add" onClick={() => openModal()}>
           <Plus size={18} /> Thêm Thiết bị
@@ -165,14 +167,20 @@ function DeviceManagementPage() {
                   <td style={{ fontWeight: 500 }}>{d.name}</td>
                   <td>
                     {d.assigned_room_id ? (
-                       <span style={{ color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' }}>Đã gán (Room {d.assigned_room_id})</span>
+                       <span className="status-badge active">
+                         <span className="status-dot" />
+                         Đã gán (Room {d.assigned_room_id})
+                       </span>
                     ) : (
-                       <span style={{ color: '#64748b', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' }}>Trống</span>
+                       <span className="status-badge" style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--text-muted)' }}>
+                         <span className="status-dot" style={{ background: 'var(--text-dim)' }} />
+                         Trống
+                       </span>
                     )}
                   </td>
                   <td>
                     <div className="row-actions" style={{ justifyContent: 'center' }}>
-                      <button className="icon-btn" onClick={() => openModal(d)} title="Sửa thiết bị">
+                      <button className="icon-btn edit" onClick={() => openModal(d)} title="Sửa thiết bị">
                         <Edit2 size={16} />
                       </button>
                       <button className="icon-btn delete" onClick={() => handleDelete(d.id, d.name)} title="Xóa thiết bị">
@@ -185,8 +193,12 @@ function DeviceManagementPage() {
               {devices.length === 0 && (
                 <tr>
                   <td colSpan="5" className="empty-state">
-                    <Wifi size={40} />
-                    <span>Chưa có thiết bị nào trong hệ thống.</span>
+                    <div className="empty-state-content">
+                      <div className="empty-state-icon">
+                        <Wifi size={28} />
+                      </div>
+                      <span>Chưa có thiết bị nào trong hệ thống.</span>
+                    </div>
                   </td>
                 </tr>
               )}
