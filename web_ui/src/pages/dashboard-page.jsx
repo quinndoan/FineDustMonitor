@@ -3,7 +3,7 @@ import { Users, Cpu, ScanLine, DoorOpen, Loader2, RefreshCw, Clock } from 'lucid
 import {
   BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area,
+  AreaChart, Area, LabelList,
 } from 'recharts'
 import { useAuth } from '../contexts/auth-context'
 import './dashboard-page.css'
@@ -21,7 +21,7 @@ const tooltipStyle = {
   boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
 }
 
-/* Custom pie chart label */
+/* Custom pie chart label — percentage on arc */
 const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
   if (percent === 0) return null
   const RADIAN = Math.PI / 180
@@ -29,14 +29,31 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
   const x = cx + radius * Math.cos(-midAngle * RADIAN)
   const y = cy + radius * Math.sin(-midAngle * RADIAN)
   return (
-    <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={700}>
+    <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={14} fontWeight={700}
+      style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>
       {`${(percent * 100).toFixed(0)}%`}
     </text>
   )
 }
 
-/* Cohesive pie chart colors (indigo/violet palette) */
-const PIE_COLORS = ['#6366f1', '#f43f5e']
+/* Center text for donut chart */
+function PieCenterLabel({ viewBox, total }) {
+  const { cx, cy } = viewBox
+  return (
+    <g>
+      <text x={cx} y={cy - 6} textAnchor="middle" fill="#f1f5f9" fontSize={28} fontWeight={800}
+        style={{ fontVariantNumeric: 'tabular-nums' }}>
+        {total}
+      </text>
+      <text x={cx} y={cy + 16} textAnchor="middle" fill="#64748b" fontSize={11} fontWeight={500}>
+        Lượt quét
+      </text>
+    </g>
+  )
+}
+
+/* Cohesive pie chart colors */
+const PIE_COLORS = ['#818cf8', '#fb7185']
 
 /** Count-up animation hook */
 function useCountUp(target, duration = 800) {
@@ -266,39 +283,50 @@ function DashboardPage() {
       {/* Charts Grid */}
       <div className="charts-grid">
         {/* Pie Chart – Today's scan results */}
-        <div className="chart-card">
+        <div className="chart-card pie-chart-card">
           <h3>Kết quả quét thẻ hôm nay</h3>
           {hasPieData ? (
-            <>
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie
-                    data={styledPieData}
-                    cx="50%" cy="50%"
-                    innerRadius={55} outerRadius={85}
-                    dataKey="value"
-                    paddingAngle={4}
-                    labelLine={false}
-                    label={renderCustomLabel}
-                    animationBegin={0}
-                    animationDuration={800}
-                  >
-                    {styledPieData.map((entry, idx) => (
-                      <Cell key={idx} fill={entry.color} stroke="transparent" />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={tooltipStyle} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="pie-legend">
+            <div className="pie-chart-layout">
+              <div className="pie-chart-wrapper">
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={styledPieData}
+                      cx="50%" cy="50%"
+                      innerRadius={62} outerRadius={90}
+                      dataKey="value"
+                      paddingAngle={3}
+                      labelLine={false}
+                      label={renderCustomLabel}
+                      animationBegin={0}
+                      animationDuration={800}
+                      strokeWidth={0}
+                    >
+                      {styledPieData.map((entry, idx) => (
+                        <Cell key={idx} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} />
+                    {/* Center total label */}
+                    <Pie data={[{ value: 1 }]} cx="50%" cy="50%" innerRadius={0} outerRadius={0} dataKey="value">
+                      <Cell fill="transparent" />
+                      <LabelList content={<PieCenterLabel total={today_scans_total} />} />
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="pie-legend-cards">
                 {styledPieData.map((s, i) => (
-                  <div key={i} className="legend-item">
-                    <span className="legend-dot" style={{ background: s.color, color: s.color }} />
-                    <span>{s.name}: <strong>{s.value}</strong></span>
+                  <div key={i} className="legend-card" style={{ '--legend-color': s.color }}>
+                    <div className="legend-card-dot" style={{ background: s.color }} />
+                    <div className="legend-card-info">
+                      <span className="legend-card-value">{s.value}</span>
+                      <span className="legend-card-name">{s.name}</span>
+                    </div>
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           ) : (
             <div className="chart-empty">
               <ScanLine size={40} />
@@ -307,31 +335,33 @@ function DashboardPage() {
           )}
         </div>
 
-        {/* Bar Chart – Students by Faculty */}
-        <div className="chart-card">
+        {/* Horizontal Bar Chart – Students by Faculty */}
+        <div className="chart-card faculty-chart-card">
           <h3>Sinh viên theo trường - viện</h3>
           {students_by_faculty.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={students_by_faculty} margin={{ bottom: 40, left: -10 }}>
+            <ResponsiveContainer width="100%" height={Math.max(200, students_by_faculty.length * 48 + 20)}>
+              <BarChart
+                data={students_by_faculty}
+                layout="vertical"
+                margin={{ top: 5, right: 40, left: 10, bottom: 5 }}
+              >
                 <defs>
-                  {students_by_faculty.map((_, idx) => (
-                    <linearGradient key={`barGrad${idx}`} id={`barGrad${idx}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={facultyGradientColors[idx % facultyGradientColors.length]} stopOpacity={0.9} />
-                      <stop offset="100%" stopColor={facultyGradientColors[idx % facultyGradientColors.length]} stopOpacity={0.5} />
-                    </linearGradient>
-                  ))}
+                  <linearGradient id="barHorizGrad" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.85} />
+                    <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.95} />
+                  </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                <XAxis type="number" stroke="#475569" fontSize={11} allowDecimals={false} axisLine={false} tickLine={false} />
+                <YAxis
                   dataKey="name"
-                  stroke="#64748b"
-                  fontSize={11}
-                  angle={-25}
-                  textAnchor="end"
-                  interval={0}
-                  height={60}
+                  type="category"
+                  width={110}
+                  stroke="#94a3b8"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
                 />
-                <YAxis stroke="#64748b" fontSize={12} allowDecimals={false} />
                 <Tooltip
                   contentStyle={tooltipStyle}
                   formatter={(value) => [value, 'Sinh viên']}
@@ -339,12 +369,24 @@ function DashboardPage() {
                     const item = students_by_faculty.find(f => f.name === label)
                     return item?.full_name || label
                   }}
-                  cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
+                  cursor={{ fill: 'rgba(99, 102, 241, 0.06)' }}
                 />
-                <Bar dataKey="students" radius={[8, 8, 0, 0]} animationDuration={1000}>
-                  {students_by_faculty.map((_, idx) => (
-                    <Cell key={idx} fill={`url(#barGrad${idx})`} />
-                  ))}
+                <Bar
+                  dataKey="students"
+                  fill="url(#barHorizGrad)"
+                  radius={[0, 6, 6, 0]}
+                  animationDuration={1000}
+                  barSize={24}
+                >
+                  <LabelList
+                    dataKey="students"
+                    position="right"
+                    fill="#c4b5fd"
+                    fontSize={13}
+                    fontWeight={700}
+                    offset={8}
+                    style={{ fontVariantNumeric: 'tabular-nums' }}
+                  />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

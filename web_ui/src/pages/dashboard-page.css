@@ -227,34 +227,77 @@
   grid-column: 1 / -1;
 }
 
-/* --- Pie Legend --- */
-.pie-legend {
+/* --- Pie Chart Layout --- */
+.pie-chart-layout {
   display: flex;
-  justify-content: center;
-  gap: 1.5rem;
-  margin-top: 0.75rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center;
 }
 
-.legend-item {
+.pie-chart-wrapper {
+  width: 100%;
+}
+
+/* Legend as mini-cards */
+.pie-legend-cards {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.legend-card {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--legend-color, #6366f1);
+  transition: all var(--transition-normal);
 }
 
-.legend-item strong {
-  color: #e2e8f0;
-  font-variant-numeric: tabular-nums;
+.legend-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.legend-dot {
-  width: 10px;
-  height: 10px;
+.legend-card-dot {
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   flex-shrink: 0;
-  box-shadow: 0 0 6px currentColor;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+}
+
+.legend-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.legend-card-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.legend-card-name {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* --- Faculty Chart Card --- */
+.faculty-chart-card {
+  display: flex;
+  flex-direction: column;
 }
 
 /* --- Empty Chart State --- */
