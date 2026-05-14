@@ -1,10 +1,13 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Plus, Edit2, Trash2, Search, Loader2, Users, CloudDownload } from 'lucide-react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Plus, Edit2, Trash2, Search, Loader2, Users, CloudDownload, ChevronLeft, ChevronRight } from 'lucide-react'
 import StudentFormModal from '../components/student-form-modal'
 import { ToastContainer } from '../components/toast-notification'
 import './student-management-page.css'
 
 const API_URL = 'http://localhost:8000/api/students'
+
+/** Page size options for pagination */
+const PAGE_SIZE_OPTIONS = [10, 20, 50]
 
 /**
  * Student management page with full CRUD operations.
@@ -18,6 +21,10 @@ function StudentManagementPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [formData, setFormData] = useState({ mssv: '', card_id: '', full_name: '', email: '', faculty: '', class_name: '' })
   const [toasts, setToasts] = useState([])
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   /** Add a toast message */
   const addToast = useCallback((message, type = 'success') => {
@@ -150,12 +157,39 @@ function StudentManagementPage() {
     }
   }
 
-  const filtered = students.filter((s) =>
-    s.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.mssv.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (s.faculty || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (s.class_name || '').toLowerCase().includes(searchTerm.toLowerCase())
+  const filtered = useMemo(() =>
+    students.filter((s) =>
+      s.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.mssv.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.faculty || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.class_name || '').toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    [students, searchTerm]
   )
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm])
+
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const startIdx = (currentPage - 1) * pageSize
+  const endIdx = startIdx + pageSize
+  const paginatedData = filtered.slice(startIdx, endIdx)
+
+  // Generate page numbers to display
+  const pageNumbers = useMemo(() => {
+    const pages = []
+    const maxVisible = 5
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2))
+    let end = Math.min(totalPages, start + maxVisible - 1)
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1)
+    }
+    for (let i = start; i <= end; i++) pages.push(i)
+    return pages
+  }, [currentPage, totalPages])
 
   return (
     <div className="students-page">
@@ -163,8 +197,8 @@ function StudentManagementPage() {
         <div>
           <h1>Quản lý Sinh viên</h1>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn-add" onClick={handleSyncSheets} style={{ background: '#10b981' }}>
+        <div className="header-actions">
+          <button className="btn-add btn-outline" onClick={handleSyncSheets}>
             <CloudDownload size={18} />
             Thêm từ Sheets
           </button>
@@ -180,12 +214,20 @@ function StudentManagementPage() {
         <Search size={18} className="search-icon" />
         <input
           type="text"
-          placeholder="Tìm kiếm theo tên hoặc MSSV..."
+          placeholder="Tìm kiếm theo tên, MSSV, khoa hoặc lớp..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           id="search-students"
         />
       </div>
+
+      {/* Record count */}
+      {!isLoading && (
+        <div className="table-count">
+          Hiển thị <strong>{paginatedData.length}</strong> / <strong>{filtered.length}</strong> sinh viên
+          {searchTerm && ` (lọc từ ${students.length} tổng)`}
+        </div>
+      )}
 
       {/* Student table */}
       <div className="table-card">
@@ -195,61 +237,116 @@ function StudentManagementPage() {
             <span>Đang tải dữ liệu...</span>
           </div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>MSSV</th>
-                <th>Mã thẻ (Card ID)</th>
-                <th>Họ và Tên</th>
-                <th>Khoa</th>
-                <th>Lớp</th>
-                <th>Email</th>
-                <th style={{ width: 100, textAlign: 'center' }}>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((s, i) => (
-                <tr key={s.mssv}>
-                  <td className="row-num">{i + 1}</td>
-                  <td className="mssv-cell">{s.mssv}</td>
-                  <td className="rfid-cell">{s.card_id}</td>
-                  <td>{s.full_name}</td>
-                  <td className="faculty-cell">{s.faculty || '—'}</td>
-                  <td className="class-cell">{s.class_name || '—'}</td>
-                  <td>{s.email}</td>
-                  <td>
-                    <div className="row-actions">
-                      <button
-                        className="icon-btn edit"
-                        onClick={() => openEdit(s)}
-                        title="Sửa"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button
-                        className="icon-btn delete"
-                        onClick={() => handleDelete(s.mssv)}
-                        title="Xóa"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
+          <>
+            <table>
+              <thead>
                 <tr>
-                  <td colSpan="8" className="empty-state">
-                    <Users size={40} />
-                    <span>
-                      {searchTerm ? 'Không tìm thấy kết quả' : 'Chưa có sinh viên nào'}
-                    </span>
-                  </td>
+                  <th>#</th>
+                  <th>MSSV</th>
+                  <th>Mã thẻ (Card ID)</th>
+                  <th>Họ và Tên</th>
+                  <th>Khoa</th>
+                  <th>Lớp</th>
+                  <th>Email</th>
+                  <th style={{ width: 100, textAlign: 'center' }}>Thao tác</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {paginatedData.map((s, i) => (
+                  <tr key={s.mssv}>
+                    <td className="row-num">{startIdx + i + 1}</td>
+                    <td className="mssv-cell">{s.mssv}</td>
+                    <td className="rfid-cell">{s.card_id}</td>
+                    <td>{s.full_name}</td>
+                    <td className="faculty-cell">{s.faculty || '—'}</td>
+                    <td className="class-cell">{s.class_name || '—'}</td>
+                    <td>{s.email}</td>
+                    <td>
+                      <div className="row-actions">
+                        <button
+                          className="icon-btn edit"
+                          onClick={() => openEdit(s)}
+                          title="Sửa"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          className="icon-btn delete"
+                          onClick={() => handleDelete(s.mssv)}
+                          title="Xóa"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan="8" className="empty-state">
+                      <div className="empty-state-content">
+                        <div className="empty-state-icon">
+                          <Users size={28} />
+                        </div>
+                        <span>
+                          {searchTerm ? 'Không tìm thấy kết quả' : 'Chưa có sinh viên nào'}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+
+            {/* Pagination */}
+            {filtered.length > 0 && (
+              <div className="table-pagination">
+                <div className="pagination-info">
+                  Trang {currentPage} / {totalPages}
+                  <select
+                    className="page-size-select"
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value))
+                      setCurrentPage(1)
+                    }}
+                    style={{ marginLeft: '0.75rem' }}
+                  >
+                    {PAGE_SIZE_OPTIONS.map((size) => (
+                      <option key={size} value={size}>{size} / trang</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="pagination-controls">
+                  <button
+                    className="pagination-btn"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    title="Trang trước"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  {pageNumbers.map((num) => (
+                    <button
+                      key={num}
+                      className={`pagination-btn${num === currentPage ? ' active' : ''}`}
+                      onClick={() => setCurrentPage(num)}
+                    >
+                      {num}
+                    </button>
+                  ))}
+                  <button
+                    className="pagination-btn"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    title="Trang sau"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

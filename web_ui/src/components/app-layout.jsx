@@ -22,45 +22,60 @@ function AppLayout() {
       <aside className="sidebar">
         <div className="sidebar-logo">
           <div className="logo-icon">
-            <Activity size={24} />
+            <Activity size={22} />
           </div>
-          <span>MS</span>
+          <div className="logo-text">
+            <span className="logo-title">Monitor Student</span>
+            <span className="logo-subtitle">Hệ thống giám sát</span>
+          </div>
         </div>
 
         <nav className="sidebar-nav">
+          {/* Main section */}
+          <span className="nav-section-label">Tổng quan</span>
           <NavLink
             to="/dashboard"
             className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
           >
-            <LayoutDashboard size={20} />
+            <LayoutDashboard size={20} className="nav-icon" />
             <span>Dashboard</span>
           </NavLink>
+
+          <div className="nav-divider" />
+
+          {/* Management section */}
+          <span className="nav-section-label">Quản lý</span>
           <NavLink
             to="/students"
             className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
           >
-            <Users size={20} />
+            <Users size={20} className="nav-icon" />
             <span>Quản lý SV</span>
           </NavLink>
           <NavLink
             to="/exam-rooms"
             className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
           >
-            <DoorOpen size={20} />
+            <DoorOpen size={20} className="nav-icon" />
             <span>Phòng thi</span>
           </NavLink>
           <NavLink
             to="/schedule"
             className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
           >
-            <Calendar size={20} />
+            <Calendar size={20} className="nav-icon" />
             <span>Lịch thi</span>
           </NavLink>
+
+          <div className="nav-divider" />
+
+          {/* Settings section */}
+          <span className="nav-section-label">Hệ thống</span>
           <NavLink
             to="/devices"
             className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
           >
-            <Wifi size={20} />
+            <Wifi size={20} className="nav-icon" />
             <span>Thiết bị</span>
           </NavLink>
         </nav>
@@ -79,7 +94,7 @@ function AppLayout() {
             </div>
           )}
           <button className="nav-item logout" onClick={handleLogout} id="btn-logout">
-            <LogOut size={20} />
+            <LogOut size={20} className="nav-icon" />
             <span>Đăng xuất</span>
           </button>
         </div>

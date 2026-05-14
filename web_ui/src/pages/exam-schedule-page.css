@@ -1,4 +1,4 @@
-/* ===== Schedule Page Custom Styles ===== */
+/* ===== Schedule Page — Redesigned ===== */
 
 .schedule-filter {
   display: flex;
@@ -11,20 +11,22 @@
 }
 
 .btn-clear {
-  padding: 0.85rem 1.25rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  color: #e2e8f0;
+  padding: 0.75rem 1.25rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
-  font-family: 'Inter', sans-serif;
+  transition: all var(--transition-normal);
+  font-family: var(--font-sans);
   white-space: nowrap;
 }
 
 .btn-clear:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .schedule-grid {
@@ -35,16 +37,20 @@
 }
 
 .schedule-card {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(12px);
+  transition: all var(--transition-normal);
+  backdrop-filter: blur(16px);
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  animation: fadeInUp 0.5s ease both;
 }
+
+.schedule-card:nth-child(odd)  { animation-delay: 0.05s; }
+.schedule-card:nth-child(even) { animation-delay: 0.10s; }
 
 .schedule-card:hover {
   transform: translateY(-4px);
@@ -56,7 +62,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border-subtle);
   padding-bottom: 1rem;
 }
 
@@ -64,16 +70,17 @@
   margin: 0;
   font-size: 1.25rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--text-primary);
 }
 
 .exam-date {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: #c4b5fd;
   background: rgba(139, 92, 246, 0.15);
-  padding: 0.25rem 0.6rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 20px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .card-body {
@@ -93,6 +100,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
 }

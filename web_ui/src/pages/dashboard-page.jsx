@@ -3,7 +3,7 @@ import { Users, Cpu, ScanLine, DoorOpen, Loader2, RefreshCw, Clock } from 'lucid
 import {
   BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area, Legend,
+  AreaChart, Area,
 } from 'recharts'
 import { useAuth } from '../contexts/auth-context'
 import './dashboard-page.css'
@@ -15,9 +15,10 @@ const WS_URL = 'ws://localhost:8000/api/dashboard/ws'
 const tooltipStyle = {
   background: '#1e293b',
   border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: 8,
+  borderRadius: 10,
   color: '#f1f5f9',
   fontSize: '0.8rem',
+  boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
 }
 
 /* Custom pie chart label */
@@ -28,10 +29,78 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
   const x = cx + radius * Math.cos(-midAngle * RADIAN)
   const y = cy + radius * Math.sin(-midAngle * RADIAN)
   return (
-    <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={600}>
+    <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={700}>
       {`${(percent * 100).toFixed(0)}%`}
     </text>
   )
+}
+
+/* Cohesive pie chart colors (indigo/violet palette) */
+const PIE_COLORS = ['#6366f1', '#f43f5e']
+
+/** Count-up animation hook */
+function useCountUp(target, duration = 800) {
+  const [value, setValue] = useState(0)
+  const prevRef = useRef(0)
+
+  useEffect(() => {
+    const start = prevRef.current
+    const end = typeof target === 'number' ? target : 0
+    if (start === end) return
+    const startTime = performance.now()
+
+    const animate = (now) => {
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3)
+      const current = Math.round(start + (end - start) * eased)
+      setValue(current)
+      if (progress < 1) {
+        requestAnimationFrame(animate)
+      } else {
+        prevRef.current = end
+      }
+    }
+
+    requestAnimationFrame(animate)
+  }, [target, duration])
+
+  return value
+}
+
+/** Skeleton Loading Component */
+function DashboardSkeleton() {
+  return (
+    <div className="dashboard">
+      <div className="page-header">
+        <div className="page-header-left">
+          <h1>Dashboard</h1>
+          <p>Tổng quan hệ thống giám sát</p>
+        </div>
+      </div>
+      <div className="skeleton-stats-grid">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="skeleton skeleton-stat-card" />
+        ))}
+      </div>
+      <div className="skeleton-charts-grid">
+        <div className="skeleton skeleton-chart" />
+        <div className="skeleton skeleton-chart" />
+        <div className="skeleton skeleton-chart-wide" />
+      </div>
+      <div className="skeleton-bottom">
+        <div className="skeleton skeleton-scan-type" />
+        <div className="skeleton skeleton-recent" />
+      </div>
+    </div>
+  )
+}
+
+/** Animated Stat Value */
+function AnimatedValue({ value }) {
+  const animated = useCountUp(value)
+  return <span className="stat-value">{animated}</span>
 }
 
 function DashboardPage() {
@@ -111,13 +180,9 @@ function DashboardPage() {
     }
   }, [fetchStats])
 
+  // Skeleton loading state
   if (loading && !stats) {
-    return (
-      <div className="dashboard-loading">
-        <Loader2 size={32} className="spin" />
-        <p>Đang tải dữ liệu...</p>
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   if (error && !stats) {
@@ -153,12 +218,22 @@ function DashboardPage() {
   // If pie chart has all zeros, show placeholder
   const hasPieData = today_scan_pie.some(d => d.value > 0)
 
-  // Faculty bar chart colors
-  const facultyColors = [
-    '#6366f1', '#8b5cf6', '#a78bfa', '#3b82f6', '#60a5fa',
-    '#10b981', '#34d399', '#f59e0b', '#f97316', '#ef4444',
-    '#ec4899', '#14b8a6', '#06b6d4',
+  // Override pie colors with cohesive palette
+  const styledPieData = today_scan_pie.map((d, i) => ({
+    ...d,
+    color: PIE_COLORS[i] || d.color,
+  }))
+
+  // Faculty bar chart — gradient indigo palette
+  const facultyGradientColors = [
+    '#6366f1', '#7c3aed', '#8b5cf6', '#a78bfa', '#818cf8',
+    '#6d28d9', '#4f46e5', '#7e22ce', '#6366f1', '#8b5cf6',
   ]
+
+  // Calculate scan type totals for progress bar
+  const rfidTotal = (scan_by_type.rfid || 0) + (scan_by_type.nfc || 0)
+  const qrTotal = scan_by_type.qr || 0
+  const scanTotal = rfidTotal + qrTotal || 1 // avoid div-by-zero
 
   return (
     <div className="dashboard">
@@ -173,7 +248,7 @@ function DashboardPage() {
         </button>
       </div>
 
-      {/* Stat Cards */}
+      {/* Stat Cards with count-up animation */}
       <div className="stats-grid">
         {statCards.map((s, i) => (
           <div className="stat-card" key={i}>
@@ -181,7 +256,7 @@ function DashboardPage() {
               <s.icon size={22} />
             </div>
             <div className="stat-info">
-              <span className="stat-value">{s.value}</span>
+              <AnimatedValue value={s.value} />
               <span className="stat-label">{s.label}</span>
             </div>
           </div>
@@ -198,25 +273,27 @@ function DashboardPage() {
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie
-                    data={today_scan_pie}
+                    data={styledPieData}
                     cx="50%" cy="50%"
                     innerRadius={55} outerRadius={85}
                     dataKey="value"
                     paddingAngle={4}
                     labelLine={false}
                     label={renderCustomLabel}
+                    animationBegin={0}
+                    animationDuration={800}
                   >
-                    {today_scan_pie.map((entry, idx) => (
-                      <Cell key={idx} fill={entry.color} />
+                    {styledPieData.map((entry, idx) => (
+                      <Cell key={idx} fill={entry.color} stroke="transparent" />
                     ))}
                   </Pie>
                   <Tooltip contentStyle={tooltipStyle} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="pie-legend">
-                {today_scan_pie.map((s, i) => (
+                {styledPieData.map((s, i) => (
                   <div key={i} className="legend-item">
-                    <span className="legend-dot" style={{ background: s.color }} />
+                    <span className="legend-dot" style={{ background: s.color, color: s.color }} />
                     <span>{s.name}: <strong>{s.value}</strong></span>
                   </div>
                 ))}
@@ -235,7 +312,15 @@ function DashboardPage() {
           <h3>Sinh viên theo trường - viện</h3>
           {students_by_faculty.length > 0 ? (
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={students_by_faculty} margin={{ bottom: 40 }}>
+              <BarChart data={students_by_faculty} margin={{ bottom: 40, left: -10 }}>
+                <defs>
+                  {students_by_faculty.map((_, idx) => (
+                    <linearGradient key={`barGrad${idx}`} id={`barGrad${idx}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={facultyGradientColors[idx % facultyGradientColors.length]} stopOpacity={0.9} />
+                      <stop offset="100%" stopColor={facultyGradientColors[idx % facultyGradientColors.length]} stopOpacity={0.5} />
+                    </linearGradient>
+                  ))}
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                 <XAxis
                   dataKey="name"
@@ -249,15 +334,16 @@ function DashboardPage() {
                 <YAxis stroke="#64748b" fontSize={12} allowDecimals={false} />
                 <Tooltip
                   contentStyle={tooltipStyle}
-                  formatter={(value, name, props) => [value, 'Sinh viên']}
+                  formatter={(value) => [value, 'Sinh viên']}
                   labelFormatter={(label) => {
                     const item = students_by_faculty.find(f => f.name === label)
                     return item?.full_name || label
                   }}
+                  cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
                 />
-                <Bar dataKey="students" radius={[6, 6, 0, 0]}>
+                <Bar dataKey="students" radius={[8, 8, 0, 0]} animationDuration={1000}>
                   {students_by_faculty.map((_, idx) => (
-                    <Cell key={idx} fill={facultyColors[idx % facultyColors.length]} />
+                    <Cell key={idx} fill={`url(#barGrad${idx})`} />
                   ))}
                 </Bar>
               </BarChart>
@@ -277,22 +363,27 @@ function DashboardPage() {
             <AreaChart data={weekly_activity}>
               <defs>
                 <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.35} />
+                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
                   <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
               <XAxis dataKey="name" stroke="#64748b" fontSize={11} />
               <YAxis stroke="#64748b" fontSize={12} allowDecimals={false} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v) => [v, 'Lượt quét']} />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                formatter={(v) => [v, 'Lượt quét']}
+                cursor={{ stroke: 'rgba(99, 102, 241, 0.3)' }}
+              />
               <Area
                 type="monotone"
                 dataKey="total"
                 stroke="#6366f1"
                 fill="url(#areaGrad)"
                 strokeWidth={2.5}
-                dot={{ fill: '#6366f1', r: 4 }}
-                activeDot={{ r: 6, stroke: '#818cf8', strokeWidth: 2 }}
+                dot={{ fill: '#6366f1', r: 4, strokeWidth: 2, stroke: '#1e1b4b' }}
+                activeDot={{ r: 7, stroke: '#818cf8', strokeWidth: 2, fill: '#6366f1' }}
+                animationDuration={1200}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -306,12 +397,34 @@ function DashboardPage() {
           <h3>Loại quét hôm nay</h3>
           <div className="scan-type-badges">
             <div className="scan-badge rfid">
-              <span className="badge-label">RFID / NFC</span>
-              <span className="badge-value">{(scan_by_type.rfid || 0) + (scan_by_type.nfc || 0)}</span>
+              <div>
+                <div className="badge-left">
+                  <span className="badge-icon">💳</span>
+                  <span className="badge-label">RFID / NFC</span>
+                </div>
+                <div className="badge-progress">
+                  <div
+                    className="badge-progress-fill"
+                    style={{ width: `${(rfidTotal / scanTotal) * 100}%` }}
+                  />
+                </div>
+              </div>
+              <span className="badge-value">{rfidTotal}</span>
             </div>
             <div className="scan-badge qr">
-              <span className="badge-label">QR Code</span>
-              <span className="badge-value">{scan_by_type.qr || 0}</span>
+              <div>
+                <div className="badge-left">
+                  <span className="badge-icon">📱</span>
+                  <span className="badge-label">QR Code</span>
+                </div>
+                <div className="badge-progress">
+                  <div
+                    className="badge-progress-fill"
+                    style={{ width: `${(qrTotal / scanTotal) * 100}%` }}
+                  />
+                </div>
+              </div>
+              <span className="badge-value">{qrTotal}</span>
             </div>
           </div>
         </div>
@@ -343,14 +456,18 @@ function DashboardPage() {
                       </td>
                       <td>
                         <span className={`type-tag ${s.scan_type}`}>
+                          {s.scan_type === 'qr' ? '📱 ' : '💳 '}
                           {s.scan_type?.toUpperCase()}
                         </span>
                       </td>
-                      <td>{s.student_mssv || '—'}</td>
+                      <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>
+                        {s.student_mssv || '—'}
+                      </td>
                       <td>{s.student_name || '—'}</td>
                       <td>
                         <span className={`result-tag ${s.result}`}>
-                          {s.result === 'accepted' ? '✓ Chấp nhận' : '✗ Từ chối'}
+                          <span className="result-dot" />
+                          {s.result === 'accepted' ? 'Chấp nhận' : 'Từ chối'}
                         </span>
                       </td>
                     </tr>
