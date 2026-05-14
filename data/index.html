@@ -1,96 +1,111 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-<title>SIOT - Homepage</title> 
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESP32 — Cài đặt WiFi</title>
 <style>
-html {
-    font-size: 42px;
-    padding-left: 5px;
-    font-family: Arial, sans-serif;
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:#0f172a;color:#e2e8f0;min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  padding:1.5rem;font-size:18px;
 }
-
-.button {
-  border: none;
-  color: white;
-  padding: 16px 32px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 2em;
-  margin: 0.1em 15% 0.1em 15%;
-  transition-duration: 0.4s;
-  width: 70%;
+.card{
+  background:#1e293b;border:1px solid #334155;border-radius:16px;
+  width:100%;max-width:520px;padding:2.5rem;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
 }
-
-.button1 {
-  background-color: white; 
-  color: black; 
-  border: 2px solid #4CAF50;
+.header{text-align:center;margin-bottom:1.5rem}
+.logo{
+  width:60px;height:60px;border-radius:16px;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 1rem;font-size:1.8rem;
 }
-.button1:hover {
-  background-color: #4CAF50;
-  color: white;
+.header h1{font-size:1.5rem;font-weight:700;margin-bottom:.35rem}
+.header p{font-size:1rem;color:#94a3b8}
+.info-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:1rem 1.25rem;margin-bottom:.6rem;
+  background:rgba(255,255,255,.04);border:1px solid #334155;border-radius:12px;
 }
-.button2 {
-  background-color: white; 
-  color: black; 
-  border: 2px solid #008CBA;
+.info-label{font-size:.9rem;color:#94a3b8}
+.info-value{font-size:1.05rem;font-weight:600;color:#818cf8}
+.btn-group{display:flex;flex-direction:column;gap:.6rem;margin-top:1.25rem}
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:.5rem;
+  padding:1rem 1.25rem;border:none;border-radius:12px;
+  font-size:1rem;font-weight:600;cursor:pointer;
+  transition:all .2s;font-family:inherit;text-decoration:none;
+  text-align:center;
 }
-.button2:hover {
-  background-color: #008CBA;
-  color: white;
-}
+.btn-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(99,102,241,.35)}
+.btn-outline{background:transparent;border:1px solid #475569;color:#e2e8f0}
+.btn-outline:hover{background:rgba(255,255,255,.05);border-color:#6366f1}
+.btn-danger{background:transparent;border:1px solid #ef4444;color:#fca5a5}
+.btn-danger:hover{background:rgba(239,68,68,.1)}
+.divider{height:1px;background:#334155;margin:1rem 0}
 </style>
 <script>
-    function GetSettings() {
-        fetch('/cgi/settings')
-        .then(res => res.text())
-        .then(text => {
-            let fields = text.split(',');
-            document.getElementById("ssid").innerHTML = fields[0];
-            document.getElementById("did").innerHTML = fields[2];
-        })
-    }
-    function SetDeviceID() {
-      let DeviceID = prompt("Please enter new Device ID:", "");
-      if (DeviceID == null)  return;
-      fetch('/cgi/save?d=' + DeviceID)
-      .then(res => res.text())
-      .then(text => {
-        window.alert(text);
-      })      
-    }    
-    function PureSettings() {
-      if (confirm("Make sure that you want to clear all settings here?. Others should be kept.", "")) {
-        fetch('/cgi/save?clear=true')
-        .then(res => res.text())
-        .then(text => {
-        window.alert(text);
-        });
-      }
-    }
+function GetSettings(){
+  fetch('/cgi/settings')
+  .then(r=>r.text())
+  .then(t=>{
+    let f=t.split(',');
+    document.getElementById('ssid').textContent=f[0]||'—';
+    document.getElementById('did').textContent=f[2]||'—';
+  }).catch(()=>{
+    document.getElementById('ssid').textContent='Lỗi';
+    document.getElementById('did').textContent='Lỗi';
+  });
+}
+function SetDeviceID(){
+  let id=prompt('Nhập Device ID mới:','');
+  if(!id) return;
+  fetch('/cgi/save?d='+id)
+  .then(r=>r.text())
+  .then(t=>alert(t));
+}
+function PureSettings(){
+  if(confirm('Bạn có chắc muốn xóa toàn bộ cấu hình thiết bị?')){
+    fetch('/cgi/save?clear=true')
+    .then(r=>r.text())
+    .then(t=>alert(t));
+  }
+}
 </script>
 </head>
-<title>SIOT - Scan WiFi Networks</title> 
 <body onload="GetSettings()">
-<div>
-	<h2>SIOT WiFi Adhoc</h2>
-	<p>Detect wifi network and permanent store ssid/password inside the device</p>
-</div>
-<div>
-	<div>Current WiFi SSID:
-        <span style="color: green; font-weight: bold;" id="ssid"></span>
-    </div>       
-    <div>Device ID:
-        <span style="color: purple; font-weight: bold;" id="did"></span>
-    </div> 
-</div>
-<div>
-<button class="button button1" onclick="window.location.href='/enroll';">WiFiScan</button>
-<button class="button button2" onclick="SetDeviceID()">DeviceID</button>
-<button class="button button2" onclick="PureSettings()">Pure settings</button>
-<button class="button button2" onclick="window.location.href='/restart';">Restart</button>
+<div class="card">
+  <div class="header">
+    <div class="logo">📡</div>
+    <h1>ESP32 — Cài đặt thiết bị</h1>
+    <p>Cấu hình WiFi & Device ID cho thiết bị quét thẻ</p>
+  </div>
+
+  <div class="info-row">
+    <span class="info-label">WiFi hiện tại</span>
+    <span class="info-value" id="ssid">Đang tải...</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">Device ID</span>
+    <span class="info-value" id="did">Đang tải...</span>
+  </div>
+
+  <div class="btn-group">
+    <a class="btn btn-primary" href="/enroll">📶 Quét & Kết nối WiFi</a>
+    <button class="btn btn-outline" onclick="SetDeviceID()">🏷️ Đổi Device ID</button>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="btn-group">
+    <button class="btn btn-outline" onclick="PureSettings()">🗑️ Xóa cấu hình</button>
+    <a class="btn btn-danger" href="/restart">🔄 Khởi động lại thiết bị</a>
+  </div>
 </div>
 </body>
 </html>

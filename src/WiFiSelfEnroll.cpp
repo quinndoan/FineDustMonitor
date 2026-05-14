@@ -93,6 +93,20 @@ void WiFiSelfEnroll::_APISave()  {
     Serial.println("WiFiSelf: /cgi/save");
     Serial.println(server.uri());
 #endif        
+    
+    /// Handle "clear all params" (Factory Reset)
+    if (server.hasArg("clear") && server.arg("clear") == "true") {
+        if (LittleFS.exists("/ssid.txt")) LittleFS.remove("/ssid.txt");
+        if (LittleFS.exists("/password.txt")) LittleFS.remove("/password.txt");
+        if (LittleFS.exists("/deviceid.txt")) LittleFS.remove("/deviceid.txt");
+        
+        ssid = "";
+        password = "";
+        deviceid = "";
+        server.send(200, "text/plain", "Factory Reset complete! Restart to apply.");
+        return;
+    }
+
     String myArg="s";
     /// Save SSID
     if (server.hasArg(myArg)) {
@@ -105,27 +119,23 @@ void WiFiSelfEnroll::_APISave()  {
     /// Save Password
     myArg="p";
     if (server.hasArg(myArg)) {
-        ssid = server.arg(myArg);
+        password = server.arg(myArg);
         File f = LittleFS.open("/password.txt", "w");
-        f.print(ssid);
+        f.print(password);
         f.close();
     }    
 
     /// Save DeviceID
     myArg="d";
     if (server.hasArg(myArg)) {
-        ssid = server.arg(myArg);
+        deviceid = server.arg(myArg);
         File f = LittleFS.open("/deviceid.txt", "w");
-        f.print(ssid);
+        f.print(deviceid);
         f.close();
     }    
 
-    /// clear all params
-
-
-    
     /// Response to the web client
-    server.send(200,"text/plain", "done deal");
+    server.send(200, "text/plain", "Saved! Restart to apply.");
 }
 
 /*-------------------------------------------------------------------------*/
@@ -170,8 +180,44 @@ void WiFiSelfEnroll::ReadWiFiConfig()  {
 }        
     
 /*-------------------------------------------------------------------------*/
-/// @brief Reboot the device
+/// @brief Reboot the device — shows countdown page first, then restarts
 void WiFiSelfEnroll::_Reboot()  {
+    // Send a nice farewell page before rebooting
+    String html = "<!DOCTYPE html><html><head>"
+        "<meta charset='utf-8'>"
+        "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+        "<title>Restarting...</title>"
+        "<style>"
+        "*{margin:0;padding:0;box-sizing:border-box}"
+        "body{font-family:-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;"
+        "min-height:100vh;display:flex;align-items:center;justify-content:center}"
+        ".card{background:#1e293b;border:1px solid #334155;border-radius:16px;"
+        "width:90%;max-width:400px;padding:2.5rem;text-align:center;"
+        "box-shadow:0 20px 60px rgba(0,0,0,.5)}"
+        ".icon{font-size:3rem;margin-bottom:1rem;animation:spin 2s linear infinite}"
+        "@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}"
+        "h2{font-size:1.3rem;margin-bottom:.5rem}"
+        "p{color:#94a3b8;font-size:1rem;margin-bottom:1.5rem}"
+        ".countdown{font-size:2.5rem;font-weight:800;color:#818cf8}"
+        ".hint{font-size:.85rem;color:#64748b;margin-top:1.5rem}"
+        "</style>"
+        "</head><body><div class='card'>"
+        "<div class='icon'>&#9881;</div>"
+        "<h2>Restarting Device</h2>"
+        "<p>Please wait while the device reboots...</p>"
+        "<div class='countdown' id='cd'>3</div>"
+        "<p class='hint'>WiFi AP will close. Reconnect to your normal WiFi.</p>"
+        "</div>"
+        "<script>"
+        "let c=3;setInterval(()=>{c--;if(c>=0)document.getElementById('cd').textContent=c;"
+        "if(c===0)document.getElementById('cd').textContent='Bye!';},1000);"
+        "</script></body></html>";
+
+    server.send(200, "text/html", html);
+    
+    // Give time for the HTTP response to be sent, then reboot
+    delay(3500);
+    
     #ifdef _DEBUG_             
     Serial.println("restart...");
     #endif              
@@ -239,10 +285,11 @@ void WiFiSelfEnroll::SetupStation(const char * adhoc_ssid, const char * adhoc_pa
     _Reboot();
 }
 
-/// @brief loop with led indicator in a shorttime. just to debug
+/// @brief loop with led indicator — runs indefinitely until user restarts via web UI (/restart)
 void WiFiSelfEnroll::_loop()  {          
-    unsigned int time_in_station_mode = ADHOC_STATION_DURATION;
-    while (time_in_station_mode > 0) {
+    // AP mode runs forever — only exits when user presses /restart from the web interface
+    // or physically resets the device.
+    while (true) {
     #ifdef _DEBUG_     
         if (APMode) {
             Serial.printf("Stations connected to soft-AP = %d \n", WiFi.softAPgetStationNum());
@@ -259,7 +306,6 @@ void WiFiSelfEnroll::_loop()  {
         delay(100);
         digitalWrite(LED_BUILTIN, LOW);                 
         delay(1000);
-        time_in_station_mode--;
     }
 }
 

@@ -22,10 +22,8 @@
 /// @brief loop times try to reconnect to the AP before activating the station mode
 #define MAX_TRY_WIFI_ACCESS 15
 
-/// @brief Auto restart the device after 5 minute. 
-/// This is very useful to make sure that the device isn't trapped in WiFi Adhoc Station mode forever. 
-/// Such as in cases the AP restarts, or the electricty gone out.
-#define ADHOC_STATION_DURATION 5 * 60
+/// @brief AP mode runs indefinitely until user triggers /restart or physical reset.
+/// The old ADHOC_STATION_DURATION timeout has been removed.
 
 class WiFiSelfEnroll{
     private:
