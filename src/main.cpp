@@ -79,15 +79,15 @@ ButtonGesture configBtn(CFG_BUTTON);
 #define VIETNAMESE_FONT u8g2_font_unifont_t_vietnamese2
 
 // --- Biến toàn cục chứa mode hoạt động --
-// 0 = Home 1 = giá trị tức thời, 2 = đồ thị, 3 = kết luận
-#define MODE_IMMEDIATE 0
-#define MODE_PLOT 1
-#define MODE_AQI 2
-#define MODE_INFO 3
-#define MODE_MQTT 4
-#define MODE_SETTINGS 5
-#define MODE_NUM 6
+
+#define MODE_WELCOME 0
+#define MODE_INFO 1
+#define MODE_SETTINGS 2
+#define MODE_MQTT 3
+#define MODE_NUM 4
 char g_mode;
+
+void renderCurrentMode(); // Khai báo để dùng trong setup()
 
 uint8_t settingCursorIndex = 0;
 #define MAX_SETTINGS_ITEM 2
@@ -230,33 +230,6 @@ static bool parseHustCardUrlToJson(const String &qrPayload, String &jsonOut) {
 }
 
 // --------------------------------------------------------
-// CÁC HÀM HIỂN THỊ TRỐNG CHỜ TÍCH HỢP MODULE MỚI
-// --------------------------------------------------------
-void displayData() {
-  u8g2.clearBuffer();
-  u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
-  u8g2.drawUTF8(5, 30, "Màn hình 1:");
-  u8g2.drawUTF8(5, 50, "Đang chờ cảm biến...");
-  u8g2.sendBuffer();
-}
-
-void plotData() {
-  u8g2.clearBuffer();
-  u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
-  u8g2.drawUTF8(5, 30, "Màn hình 2:");
-  u8g2.drawUTF8(5, 50, "Chưa có đồ thị");
-  u8g2.sendBuffer();
-}
-
-void displayLevel() {
-  u8g2.clearBuffer();
-  u8g2.setFont(u8g2_font_unifont_t_vietnamese2);
-  u8g2.drawUTF8(5, 30, "Màn hình 3:");
-  u8g2.drawUTF8(5, 50, "Đợi đánh giá AQI...");
-  u8g2.sendBuffer();
-}
-
-// --------------------------------------------------------
 // HÀM CHÍNH: setup()
 // --------------------------------------------------------
 void setup() {
@@ -292,8 +265,8 @@ void setup() {
 #endif
   buzzerMgr.beepShort(); // Còi bíp 1 tiếng báo hiệu boot xong
 
-  // 9. Mode hoạt động đầu tiên (vào thẳng trang đo đạc)
-  g_mode = MODE_IMMEDIATE;
+  // 9. Mode hoạt động đầu tiên
+  g_mode = MODE_WELCOME;
 
   // 9. Bắt đầu khởi tạo internet
   if (configMgr.params.wifiEnabled) {
@@ -313,26 +286,25 @@ void setup() {
   // Khởi tạo module QR scanner UART (MH-ET LIVE)
   qr_init();
 
-  delay(2000);
+  delay(5000);
+  
+  // Hiển thị màn hình của chế độ khởi động ban đầu
+  renderCurrentMode();
 }
 
 // --------------------------------------------------------
 // HÀM CHÍNH: loop()
 // --------------------------------------------------------
 void renderCurrentMode() {
-  if (g_mode == MODE_INFO) {
+  if (g_mode == MODE_WELCOME) {
+    showWelcomeScreen(u8g2);
+  } else if (g_mode == MODE_INFO) {
     showFlashConfig(
         u8g2, (mqttMgr.connected() ? "MQTT: Connected" : "MQTT: Disconnected"));
-  } else if (g_mode == MODE_IMMEDIATE) {
-    displayData();
-  } else if (g_mode == MODE_PLOT) {
-    plotData();
-  } else if (g_mode == MODE_AQI) {
-    displayLevel();
-  } else if (g_mode == MODE_MQTT) {
-    showMqttConfig(u8g2);
   } else if (g_mode == MODE_SETTINGS) {
     showSettingsPage(u8g2, settingCursorIndex);
+  } else if (g_mode == MODE_MQTT) {
+    showMqttConfig(u8g2);
   }
 }
 
@@ -610,8 +582,7 @@ void loop() {
     }
   } else if (evt == LONG_PRESS_2S) {
     if (g_mode == MODE_SETTINGS) {
-      // Bấm giữ 2s để thoát nhanh về màn hình chính
-      g_mode = MODE_IMMEDIATE;
+      g_mode = MODE_INFO;
       settingCursorIndex = 0;
       renderCurrentMode();
     } else {
