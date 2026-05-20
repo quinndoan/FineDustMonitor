@@ -259,7 +259,7 @@ function DeviceManagementPage() {
                 />
               </div>
               <div className="field-group">
-                <label>Tên Thiết bị (Vị trí)</label>
+                <label>Tên Thiết bị</label>
                 <input 
                   type="text" 
                   placeholder="VD: Máy quét Cửa trước - D9-101" 
