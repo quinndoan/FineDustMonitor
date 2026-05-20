@@ -6,7 +6,7 @@ from datetime import date, time
 import threading
 
 from database import get_db
-from models import ExamRoom, User, ExamRoomStudent, Student, AttendanceStatus
+from models import ExamRoom, User, ExamRoomStudent, Student, AttendanceStatus, Device
 from auth_service import get_current_user
 from sheet_service import create_sheet_service
 
@@ -141,6 +141,10 @@ def delete_exam_room(room_id: int, db: Session = Depends(get_db), current_user: 
     room = db.query(ExamRoom).filter(ExamRoom.id == room_id).first()
     if not room:
         raise HTTPException(status_code=404, detail="Không tìm thấy lớp thi")
+
+    # Xóa sinh viên liên kết và thiết bị gán trước khi xóa phòng
+    db.query(ExamRoomStudent).filter(ExamRoomStudent.exam_room_id == room_id).delete()
+    db.query(Device).filter(Device.assigned_room_id == room_id).update({"assigned_room_id": None})
 
     db.delete(room)
     db.commit()
