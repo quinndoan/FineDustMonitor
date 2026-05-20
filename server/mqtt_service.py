@@ -5,7 +5,7 @@ from datetime import datetime
 import paho.mqtt.client as mqtt
 
 from database import SessionLocal
-from models import Device, Student, ExamRoomStudent, AttendanceStatus, ScanLog
+from models import Device, Student, ExamRoom, ExamRoomStudent, AttendanceStatus, ScanLog
 
 logging.basicConfig(level=logging.INFO)
 
@@ -78,6 +78,15 @@ def process_scan(device_id: str, scan_type: str, data: dict):
             return
 
         room_id = device.assigned_room_id
+
+        # Check if room attendance is still open
+        room = db.query(ExamRoom).filter(ExamRoom.id == room_id).first()
+        if not room or not room.is_active:
+            logging.warning(f"[MQTT] Room {room_id} attendance is closed. Ignoring scan from {device_id}.")
+            if mqtt_client:
+                response = {"action": "verify_result", "status": "denied", "message": "Room closed"}
+                mqtt_client.publish(f"monitor_student/{device_id}/cmd", json.dumps(response))
+            return
         # Extract raw scan data for logging
         raw_scan_data = data.get("uid", data.get("qr_data", str(data)))
         student = None

@@ -27,7 +27,7 @@ class DeviceCreate(BaseModel):
 @router.get("", response_model=List[DeviceResponse])
 def get_devices(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Lấy danh sách tất cả thiết bị"""
-    return db.query(Device).all()
+    return db.query(Device).order_by(Device.device_id).all()
 
 @router.post("", response_model=DeviceResponse)
 def create_device(payload: DeviceCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

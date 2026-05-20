@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, UserPlus, Trash2, Loader2, Users, CloudDownload, Wifi } from 'lucide-react'
+import { ArrowLeft, UserPlus, Trash2, Loader2, Users, CloudDownload, Wifi, Lock, Unlock } from 'lucide-react'
 import { ToastContainer } from '../components/toast-notification'
 import { API_BASE_URL, WS_BASE_URL } from '../config'
 import './student-management-page.css' // Reuse styles
@@ -225,6 +225,25 @@ function ExamRoomDetailPage() {
   const presentCount = students.filter(s => s.attendance_status === 'PRESENT').length
   const absentCount = students.length - presentCount
 
+  const handleToggleActive = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`${API_BASE_URL}/api/exam-rooms/${roomId}/toggle-active`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setRoomInfo(updated)
+        addToast(updated.is_active ? 'Đã mở điểm danh' : 'Đã đóng điểm danh', 'success')
+      } else {
+        addToast('Lỗi thay đổi trạng thái', 'error')
+      }
+    } catch (err) {
+      addToast('Lỗi kết nối', 'error')
+    }
+  }
+
   return (
     <div className="students-page">
       {/* Header with back button */}
@@ -245,6 +264,15 @@ function ExamRoomDetailPage() {
             )}
           </div>
         </div>
+        {roomInfo && (
+          <button
+            className={`btn-toggle-active ${roomInfo.is_active ? 'active' : 'closed'}`}
+            onClick={handleToggleActive}
+            title={roomInfo.is_active ? 'Đóng điểm danh' : 'Mở điểm danh'}
+          >
+            {roomInfo.is_active ? <><Unlock size={18} /> Đang mở điểm danh</> : <><Lock size={18} /> Đã đóng điểm danh</>}
+          </button>
+        )}
       </div>
 
       {/* Attendance Summary */}

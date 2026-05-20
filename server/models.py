@@ -79,6 +79,7 @@ class ExamRoom(Base):
     exam_date = Column(Date, nullable=False)
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
+    is_active = Column(Boolean, default=True)  # Điểm danh đang mở hay đã đóng
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
     created_at = Column(DateTime, default=datetime.utcnow)
 

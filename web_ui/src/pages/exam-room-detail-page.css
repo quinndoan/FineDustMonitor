@@ -44,6 +44,41 @@
   font-weight: 600;
 }
 
+/* --- Toggle Active Button --- */
+.btn-toggle-active {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid;
+  transition: all var(--transition-normal);
+  white-space: nowrap;
+}
+
+.btn-toggle-active.active {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+}
+
+.btn-toggle-active.active:hover {
+  background: rgba(16, 185, 129, 0.25);
+}
+
+.btn-toggle-active.closed {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.btn-toggle-active.closed:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
 /* --- Attendance Summary --- */
 .attendance-summary {
   display: flex;

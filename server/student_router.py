@@ -1,3 +1,5 @@
+import threading
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
@@ -45,7 +47,7 @@ class StudentResponse(BaseModel):
 @router.get("", response_model=List[StudentResponse])
 def get_students(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Lấy danh sách tất cả sinh viên"""
-    return db.query(Student).all()
+    return db.query(Student).order_by(Student.mssv).all()
 
 @router.post("", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
 def create_student(payload: StudentCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -96,25 +98,28 @@ def update_student(mssv: str, payload: StudentUpdate, db: Session = Depends(get_
     db.commit()
     db.refresh(student)
 
-    # Đồng bộ ngược lên Google Sheets (tìm MSSV trong tất cả tab SV_*)
-    try:
-        sheet_service, mode = create_sheet_service()
-        if mode == "google_sheets":
-            row_data = [
-                student.mssv,
-                student.card_id or "",
-                student.full_name,
-                student.email or "",
-                student.faculty or "",
-                student.class_name or "",
-                student.course_year or "",
-            ]
-            sv_tabs = [t for t in sheet_service.list_sheet_names() if t.startswith("SV_")]
-            for tab in sv_tabs:
-                if sheet_service.update_row_by_key(tab, mssv, row_data):
-                    break  # Đã tìm thấy và cập nhật, không cần tìm tiếp
-    except Exception as e:
-        print(f"⚠️ Không thể đồng bộ ngược lên Sheets: {e}")
+    # Đồng bộ ngược lên Google Sheets (chạy background, không block response)
+    def sync_to_sheets():
+        try:
+            sheet_service, mode = create_sheet_service()
+            if mode == "google_sheets":
+                row_data = [
+                    student.mssv,
+                    student.card_id or "",
+                    student.full_name,
+                    student.email or "",
+                    student.faculty or "",
+                    student.class_name or "",
+                    student.course_year or "",
+                ]
+                sv_tabs = [t for t in sheet_service.list_sheet_names() if t.startswith("SV_")]
+                for tab in sv_tabs:
+                    if sheet_service.update_row_by_key(tab, mssv, row_data):
+                        break
+        except Exception as e:
+            print(f"⚠️ Không thể đồng bộ ngược lên Sheets: {e}")
+
+    threading.Thread(target=sync_to_sheets, daemon=True).start()
 
     return student
 

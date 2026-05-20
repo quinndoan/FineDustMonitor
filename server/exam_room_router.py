@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import date, time
+import threading
 
 from database import get_db
 from models import ExamRoom, User, ExamRoomStudent, Student, AttendanceStatus
@@ -45,6 +46,7 @@ class ExamRoomResponse(BaseModel):
     exam_date: date
     start_time: time
     end_time: time
+    is_active: bool
     created_by: int | None
 
     class Config:
@@ -102,32 +104,34 @@ def update_exam_room(room_id: int, payload: ExamRoomUpdate, db: Session = Depend
     db.commit()
     db.refresh(room)
 
-    # Đồng bộ ngược lên Google Sheets (tìm trong tất cả tab LichThi_*)
-    try:
-        sheet_service, mode = create_sheet_service()
-        if mode == "google_sheets":
-            new_row = [
-                room.room_name,
-                room.subject,
-                room.exam_date.strftime("%d/%m/%Y"),
-                room.start_time.strftime("%H:%M"),
-                room.end_time.strftime("%H:%M"),
-            ]
-            lich_tabs = [t for t in sheet_service.list_sheet_names() if t.startswith("LichThi_")]
-            for tab in lich_tabs:
-                try:
-                    rows = sheet_service.read_rows(tab)
-                    for i, row in enumerate(rows):
-                        if not row or len(row) < 4:
-                            continue
-                        # So khớp theo phòng + môn cũ (trước khi sửa)
-                        if row[0].strip() == old_room_name and row[1].strip() == old_subject:
-                            sheet_service.update_row(tab, i + 1, new_row)
-                            break
-                except Exception:
-                    continue
-    except Exception as e:
-        print(f"⚠️ Không thể đồng bộ lớp thi ngược lên Sheets: {e}")
+    # Đồng bộ ngược lên Google Sheets (chạy background, không block response)
+    def sync_to_sheets():
+        try:
+            sheet_service, mode = create_sheet_service()
+            if mode == "google_sheets":
+                new_row = [
+                    room.room_name,
+                    room.subject,
+                    room.exam_date.strftime("%d/%m/%Y"),
+                    room.start_time.strftime("%H:%M"),
+                    room.end_time.strftime("%H:%M"),
+                ]
+                lich_tabs = [t for t in sheet_service.list_sheet_names() if t.startswith("LichThi_")]
+                for tab in lich_tabs:
+                    try:
+                        rows = sheet_service.read_rows(tab)
+                        for i, row in enumerate(rows):
+                            if not row or len(row) < 4:
+                                continue
+                            if row[0].strip() == old_room_name and row[1].strip() == old_subject:
+                                sheet_service.update_row(tab, i + 1, new_row)
+                                break
+                    except Exception:
+                        continue
+        except Exception as e:
+            print(f"⚠️ Không thể đồng bộ lớp thi ngược lên Sheets: {e}")
+
+    threading.Thread(target=sync_to_sheets, daemon=True).start()
 
     return room
 
@@ -137,10 +141,22 @@ def delete_exam_room(room_id: int, db: Session = Depends(get_db), current_user: 
     room = db.query(ExamRoom).filter(ExamRoom.id == room_id).first()
     if not room:
         raise HTTPException(status_code=404, detail="Không tìm thấy lớp thi")
-    
+
     db.delete(room)
     db.commit()
     return None
+
+@router.patch("/{room_id}/toggle-active", response_model=ExamRoomResponse)
+def toggle_exam_room_active(room_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Đóng/mở điểm danh cho phòng thi"""
+    room = db.query(ExamRoom).filter(ExamRoom.id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="Không tìm thấy lớp thi")
+
+    room.is_active = not room.is_active
+    db.commit()
+    db.refresh(room)
+    return room
 
 # ==========================================
 # QUẢN LÝ SINH VIÊN TRONG LỚP THI
@@ -154,7 +170,8 @@ def get_students_in_room(room_id: int, db: Session = Depends(get_db), current_us
         raise HTTPException(status_code=404, detail="Không tìm thấy lớp thi")
     
     results = db.query(Student, ExamRoomStudent).join(ExamRoomStudent, Student.id == ExamRoomStudent.student_id)\
-                .filter(ExamRoomStudent.exam_room_id == room_id).all()
+                .filter(ExamRoomStudent.exam_room_id == room_id)\
+                .order_by(Student.mssv).all()
     
     students_list = []
     for student, relation in results:
