@@ -1,4 +1,6 @@
 import os
+import json
+import tempfile
 from typing import Any
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -204,27 +206,47 @@ class GoogleSheetsService:
 
 def create_sheet_service() -> tuple[Any, str]:
 	service_account_file = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "").strip()
+	service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
 	spreadsheet_id = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID", "").strip()
 	default_range = os.getenv("GOOGLE_SHEETS_DEFAULT_RANGE", "A:Z").strip() or "A:Z"
-	base_dir = os.path.dirname(os.path.abspath(__file__))
-	service_account_path = (
-		service_account_file
-		if os.path.isabs(service_account_file)
-		else os.path.join(base_dir, service_account_file)
-	)
 
-	if not service_account_file or not spreadsheet_id:
+	if not spreadsheet_id:
 		return InMemorySheetService(), "mock"
 
-	if not os.path.isfile(service_account_path):
-		return InMemorySheetService(), "mock"
+	# Option 1: JSON content in env variable (for cloud deployment)
+	if service_account_json:
+		try:
+			creds_data = json.loads(service_account_json)
+			tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+			json.dump(creds_data, tmp)
+			tmp.close()
+			service = GoogleSheetsService(
+				service_account_file=tmp.name,
+				spreadsheet_id=spreadsheet_id,
+				default_range=default_range,
+			)
+			return service, "google_sheets"
+		except Exception:
+			return InMemorySheetService(), "mock"
 
-	try:
-		service = GoogleSheetsService(
-			service_account_file=service_account_path,
-			spreadsheet_id=spreadsheet_id,
-			default_range=default_range,
+	# Option 2: File path (for local development)
+	if service_account_file:
+		base_dir = os.path.dirname(os.path.abspath(__file__))
+		service_account_path = (
+			service_account_file
+			if os.path.isabs(service_account_file)
+			else os.path.join(base_dir, service_account_file)
 		)
-		return service, "google_sheets"
-	except Exception:
-		return InMemorySheetService(), "mock"
+		if not os.path.isfile(service_account_path):
+			return InMemorySheetService(), "mock"
+		try:
+			service = GoogleSheetsService(
+				service_account_file=service_account_path,
+				spreadsheet_id=spreadsheet_id,
+				default_range=default_range,
+			)
+			return service, "google_sheets"
+		except Exception:
+			return InMemorySheetService(), "mock"
+
+	return InMemorySheetService(), "mock"
