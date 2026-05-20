@@ -170,18 +170,18 @@ def get_dashboard_stats(
 def _shorten_faculty(name: str) -> str:
     """Shorten long faculty names for chart labels."""
     replacements = {
-        "Trường Công nghệ Thông tin và Truyền thông": "CNTT & TT",
-        "Trường Điện - Điện tử": "Điện - ĐT",
-        "Trường Cơ khí": "Cơ khí",
-        "Trường Vật liệu": "Vật liệu",
-        "Trường Hóa và Khoa học sự sống": "Hóa & KHSS",
-        "Trường Kinh tế": "Kinh tế",
-        "Khoa Khoa học và Công nghệ Giáo dục": "KH & CN GD",
-        "Khoa Vật lý kỹ thuật": "VL Kỹ thuật",
-        "Khoa Toán - Tin": "Toán - Tin",
-        "Khoa Ngoại ngữ": "Ngoại ngữ",
-        "Khoa Giáo dục Quốc phòng và An ninh": "GD QP & AN",
-        "Khoa Giáo dục thể chất": "GD Thể chất",
-        "Khoa Lý luận chính trị": "LL Chính trị",
+        "Trường Công nghệ Thông tin và Truyền thông": "Trường CNTT & TT",
+        "Trường Điện - Điện tử": "Trường Điện - ĐT",
+        "Trường Cơ khí": "Trường Cơ khí",
+        "Trường Vật liệu": "Trường Vật liệu",
+        "Trường Hóa và Khoa học sự sống": "Trường Hóa & KHSS",
+        "Trường Kinh tế": "Trường Kinh tế",
+        "Khoa Khoa học và Công nghệ Giáo dục": "Khoa KH & CN GD",
+        "Khoa Vật lý kỹ thuật": "Khoa VL Kỹ thuật",
+        "Khoa Toán - Tin": "Khoa Toán - Tin",
+        "Khoa Ngoại ngữ": "Khoa Ngoại ngữ",
+        "Khoa Giáo dục Quốc phòng và An ninh": "Khoa GD QP & AN",
+        "Khoa Giáo dục thể chất": "Khoa GD Thể chất",
+        "Khoa Lý luận chính trị": "Khoa LL Chính trị",
     }
-    return replacements.get(name, name[:15])
+    return replacements.get(name, name[:20])

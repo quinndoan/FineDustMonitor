@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Calendar, Loader2, DoorOpen, Clock } from 'lucide-react'
 import './student-management-page.css' // Reuse styles
+import { API_BASE_URL } from '../config'
 import './exam-schedule-page.css'
 
-const API_URL = 'http://localhost:8000/api/exam-rooms'
+const API_URL = `${API_BASE_URL}/api/exam-rooms`
 
 function ExamSchedulePage() {
   const [rooms, setRooms] = useState([])

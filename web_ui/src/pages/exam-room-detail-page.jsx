@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, UserPlus, Trash2, Loader2, Users, CloudDownload, Wifi } from 'lucide-react'
 import { ToastContainer } from '../components/toast-notification'
+import { API_BASE_URL, WS_BASE_URL } from '../config'
 import './student-management-page.css' // Reuse styles
 import './exam-room-detail-page.css'
 
@@ -33,8 +34,7 @@ function ExamRoomDetailPage() {
     fetchDevices()
 
     // Realtime WebSocket connection
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const ws = new WebSocket(`${wsProtocol}//localhost:8000/api/exam-rooms/ws/${roomId}`)
+    const ws = new WebSocket(`${WS_BASE_URL}/api/exam-rooms/ws/${roomId}`)
     
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data)
@@ -54,8 +54,8 @@ function ExamRoomDetailPage() {
     try {
       const token = localStorage.getItem('token')
       const [resAll, resAssigned] = await Promise.all([
-        fetch('http://localhost:8000/api/devices', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`http://localhost:8000/api/exam-rooms/${roomId}/devices`, { headers: { Authorization: `Bearer ${token}` } })
+        fetch(`${API_BASE_URL}/api/devices`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/api/exam-rooms/${roomId}/devices`, { headers: { Authorization: `Bearer ${token}` } })
       ])
       if (resAll.ok) setAllDevices(await resAll.json())
       if (resAssigned.ok) setAssignedDevices(await resAssigned.json())
@@ -67,7 +67,7 @@ function ExamRoomDetailPage() {
   const fetchRoomInfo = async () => {
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch('http://localhost:8000/api/exam-rooms', {
+      const res = await fetch(`${API_BASE_URL}/api/exam-rooms`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
@@ -84,7 +84,7 @@ function ExamRoomDetailPage() {
     try {
       setIsLoading(true)
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/exam-rooms/${roomId}/students`, {
+      const res = await fetch(`${API_BASE_URL}/api/exam-rooms/${roomId}/students`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
@@ -103,7 +103,7 @@ function ExamRoomDetailPage() {
 
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/exam-rooms/${roomId}/students`, {
+      const res = await fetch(`${API_BASE_URL}/api/exam-rooms/${roomId}/students`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -134,7 +134,7 @@ function ExamRoomDetailPage() {
     try {
       setIsLoading(true)
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/exam-rooms/${roomId}/students/sync`, {
+      const res = await fetch(`${API_BASE_URL}/api/exam-rooms/${roomId}/students/sync`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -162,7 +162,7 @@ function ExamRoomDetailPage() {
     
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/exam-rooms/${roomId}/students/${mssv}`, {
+      const res = await fetch(`${API_BASE_URL}/api/exam-rooms/${roomId}/students/${mssv}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -185,7 +185,7 @@ function ExamRoomDetailPage() {
     if (!selectedDeviceId) return
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/exam-rooms/${roomId}/devices/${selectedDeviceId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/exam-rooms/${roomId}/devices/${selectedDeviceId}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -205,7 +205,7 @@ function ExamRoomDetailPage() {
   const handleRemoveDevice = async (deviceId) => {
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/exam-rooms/${roomId}/devices/${deviceId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/exam-rooms/${roomId}/devices/${deviceId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })

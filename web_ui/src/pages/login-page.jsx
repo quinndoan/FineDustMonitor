@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Mail, Lock, User, ArrowRight, Activity, Building2, Loader2, KeyRound, ArrowLeft, ShieldCheck, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '../contexts/auth-context'
+import { API_BASE_URL } from '../config'
 import './login-page.css'
 
-const API_BASE = 'http://localhost:8000/api/auth'
+const API_BASE = `${API_BASE_URL}/api/auth`
 
 /**
  * Login / Register / Forgot Password page.

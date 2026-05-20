@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Edit2, Trash2, Loader2, Wifi, X } from 'lucide-react'
+import { Plus, Edit2, Trash2, Loader2, Wifi, X, CloudDownload } from 'lucide-react'
 import { ToastContainer } from '../components/toast-notification'
+import { API_BASE_URL } from '../config'
 import './student-management-page.css'
 import '../components/student-form-modal.css'
 
@@ -10,6 +11,7 @@ function DeviceManagementPage() {
   const [toasts, setToasts] = useState([])
 
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
   const [editingDevice, setEditingDevice] = useState(null)
   
   const [deviceId, setDeviceId] = useState('')
@@ -32,7 +34,7 @@ function DeviceManagementPage() {
     try {
       setIsLoading(true)
       const token = localStorage.getItem('token')
-      const res = await fetch('http://localhost:8000/api/devices', {
+      const res = await fetch(`${API_BASE_URL}/api/devices`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
@@ -42,6 +44,28 @@ function DeviceManagementPage() {
       console.error(err)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleSyncFromSheets = async () => {
+    try {
+      setIsSyncing(true)
+      const token = localStorage.getItem('token')
+      const res = await fetch(`${API_BASE_URL}/api/devices/sync-from-sheets`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const data = await res.json()
+      if (res.ok) {
+        addToast(data.message || 'Đồng bộ thành công', 'success')
+        fetchDevices()
+      } else {
+        addToast(data.detail || 'Lỗi đồng bộ', 'error')
+      }
+    } catch (err) {
+      addToast('Lỗi kết nối máy chủ', 'error')
+    } finally {
+      setIsSyncing(false)
     }
   }
 
@@ -74,7 +98,7 @@ function DeviceManagementPage() {
       const token = localStorage.getItem('token')
       if (editingDevice) {
         // Update
-        const res = await fetch(`http://localhost:8000/api/devices/${editingDevice.id}`, {
+        const res = await fetch(`${API_BASE_URL}/api/devices/${editingDevice.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ name: name.trim() })
@@ -89,7 +113,7 @@ function DeviceManagementPage() {
         }
       } else {
         // Create
-        const res = await fetch('http://localhost:8000/api/devices', {
+        const res = await fetch(`${API_BASE_URL}/api/devices`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ device_id: deviceId.trim(), name: name.trim() })
@@ -112,7 +136,7 @@ function DeviceManagementPage() {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa thiết bị ${name}?`)) return
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/devices/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/devices/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -137,9 +161,15 @@ function DeviceManagementPage() {
             Thêm, sửa, xóa và theo dõi trạng thái các thiết bị quét thẻ
           </p>
         </div>
-        <button className="btn-add" onClick={() => openModal()}>
-          <Plus size={18} /> Thêm Thiết bị
-        </button>
+        <div className="header-actions">
+          <button className="btn-add btn-outline" onClick={handleSyncFromSheets} disabled={isSyncing}>
+            <CloudDownload size={18} className={isSyncing ? 'pulse' : ''} />
+            {isSyncing ? 'Đang thêm...' : 'Thêm từ Sheets'}
+          </button>
+          <button className="btn-add" onClick={() => openModal()}>
+            <Plus size={18} /> Thêm Thiết bị
+          </button>
+        </div>
       </div>
 
       <div className="table-card">

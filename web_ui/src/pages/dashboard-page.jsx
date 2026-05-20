@@ -6,10 +6,11 @@ import {
   AreaChart, Area, LabelList,
 } from 'recharts'
 import { useAuth } from '../contexts/auth-context'
+import { API_BASE_URL, WS_BASE_URL } from '../config'
 import './dashboard-page.css'
 
-const API_URL = 'http://localhost:8000/api/dashboard/stats'
-const WS_URL = 'ws://localhost:8000/api/dashboard/ws'
+const API_URL = `${API_BASE_URL}/api/dashboard/stats`
+const WS_URL = `${WS_BASE_URL}/api/dashboard/ws`
 
 /* Shared tooltip style */
 const tooltipStyle = {

@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Plus, Edit2, Trash2, Search, Loader2, Users, CloudDownload, ChevronLeft, ChevronRight } from 'lucide-react'
 import StudentFormModal from '../components/student-form-modal'
 import { ToastContainer } from '../components/toast-notification'
+import { API_BASE_URL } from '../config'
 import './student-management-page.css'
 
-const API_URL = 'http://localhost:8000/api/students'
+const API_URL = `${API_BASE_URL}/api/students`
 
 /** Page size options for pagination */
 const PAGE_SIZE_OPTIONS = [10, 20, 50]
