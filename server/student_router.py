@@ -17,6 +17,7 @@ class StudentCreate(BaseModel):
     email: str | None = None
     faculty: str | None = None
     class_name: str | None = None
+    course_year: str | None = None
 
 class StudentUpdate(BaseModel):
     card_id: str | None = None
@@ -24,6 +25,7 @@ class StudentUpdate(BaseModel):
     email: str | None = None
     faculty: str | None = None
     class_name: str | None = None
+    course_year: str | None = None
     status: str | None = None
 
 class StudentResponse(BaseModel):
@@ -34,6 +36,7 @@ class StudentResponse(BaseModel):
     email: str | None
     faculty: str | None
     class_name: str | None
+    course_year: str | None
     status: str
 
     class Config:
@@ -59,6 +62,7 @@ def create_student(payload: StudentCreate, db: Session = Depends(get_db), curren
         email=payload.email,
         faculty=payload.faculty,
         class_name=payload.class_name,
+        course_year=payload.course_year,
     )
     db.add(new_student)
     db.commit()
@@ -84,6 +88,8 @@ def update_student(mssv: str, payload: StudentUpdate, db: Session = Depends(get_
         student.faculty = payload.faculty
     if payload.class_name is not None:
         student.class_name = payload.class_name
+    if payload.course_year is not None:
+        student.course_year = payload.course_year
     if payload.status is not None:
         student.status = payload.status
 
@@ -101,6 +107,7 @@ def update_student(mssv: str, payload: StudentUpdate, db: Session = Depends(get_
                 student.email or "",
                 student.faculty or "",
                 student.class_name or "",
+                student.course_year or "",
             ]
             sv_tabs = [t for t in sheet_service.list_sheet_names() if t.startswith("SV_")]
             for tab in sv_tabs:
@@ -138,7 +145,7 @@ def sync_students_from_sheets(db: Session = Depends(get_db), current_user: User 
     Đồng bộ danh sách sinh viên từ Google Sheets vào Database.
     Tự động quét tất cả tab có prefix 'SV_' (vd: SV_KHMT, SV_KTMT).
     Tên lớp được lấy từ tên sheet (phần sau 'SV_').
-    Mỗi sheet cần có header: MSSV | Card ID | Họ và tên | Email | Khoa
+    Mỗi sheet cần có header: MSSV | Card ID | Họ và tên | Email | Trường/Viện | Lớp | Khóa
     (class_name tự động lấy từ tên sheet)
     """
     sheet_service, mode = create_sheet_service()
@@ -185,10 +192,9 @@ def sync_students_from_sheets(db: Session = Depends(get_db), current_user: User 
             card_id = row[1].strip() if len(row) > 1 and row[1].strip() else None
             full_name = row[2].strip() if len(row) > 2 and row[2].strip() else "Unknown"
             email = row[3].strip() if len(row) > 3 and row[3].strip() else None
-            # Khoa lấy từ cột 5 (index 4)
-            # class_name: ưu tiên cột 6 (index 5) trên Sheet, nếu trống thì lấy từ tên tab
             faculty = row[4].strip() if len(row) > 4 and row[4].strip() else None
             class_name = row[5].strip() if len(row) > 5 and row[5].strip() else class_name_from_sheet
+            course_year = row[6].strip() if len(row) > 6 and row[6].strip() else None
 
             # Kiểm tra card_id trùng lặp
             if card_id:
@@ -214,6 +220,9 @@ def sync_students_from_sheets(db: Session = Depends(get_db), current_user: User 
                 if class_name and existing.class_name != class_name:
                     existing.class_name = class_name
                     changed = True
+                if course_year and existing.course_year != course_year:
+                    existing.course_year = course_year
+                    changed = True
                 if card_id and existing.card_id != card_id:
                     conflict = db.query(Student).filter(Student.card_id == card_id, Student.id != existing.id).first()
                     if not conflict:
@@ -234,6 +243,7 @@ def sync_students_from_sheets(db: Session = Depends(get_db), current_user: User 
             new_student = Student(
                 mssv=mssv, card_id=card_id, full_name=full_name,
                 email=email, faculty=faculty, class_name=class_name,
+                course_year=course_year,
             )
             db.add(new_student)
             added_count += 1

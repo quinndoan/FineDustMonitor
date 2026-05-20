@@ -57,8 +57,9 @@ class Student(Base):
     card_id = Column(String(100), unique=True, index=True)
     full_name = Column(String(255), nullable=False)
     email = Column(String(255))
-    faculty = Column(String(255))  # Khoa / Trường (e.g. "CNTT và Truyền thông")
-    class_name = Column(String(100))  # Lớp (e.g. "KHMT", "KTMT")
+    faculty = Column(String(255))  # Trường / Viện (e.g. "Trường Công nghệ Thông tin và Truyền thông")
+    class_name = Column(String(100))  # Lớp (e.g. "Global ICT 01")
+    course_year = Column(String(20))  # Khóa (e.g. "K67", "K65")
     status = Column(
         SAEnum(StudentStatus, name="student_status"),
         default=StudentStatus.UNBLOCKED,

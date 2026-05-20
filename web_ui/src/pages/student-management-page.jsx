@@ -20,7 +20,7 @@ function StudentManagementPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingMssv, setEditingMssv] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [formData, setFormData] = useState({ mssv: '', card_id: '', full_name: '', email: '', faculty: '', class_name: '' })
+  const [formData, setFormData] = useState({ mssv: '', card_id: '', full_name: '', email: '', faculty: '', class_name: '', course_year: '' })
   const [toasts, setToasts] = useState([])
 
   // Pagination state
@@ -63,13 +63,13 @@ function StudentManagementPage() {
 
   const openAdd = () => {
     setEditingMssv(null)
-    setFormData({ mssv: '', card_id: '', full_name: '', email: '', faculty: '', class_name: '' })
+    setFormData({ mssv: '', card_id: '', full_name: '', email: '', faculty: '', class_name: '', course_year: '' })
     setIsModalOpen(true)
   }
 
   const openEdit = (s) => {
     setEditingMssv(s.mssv)
-    setFormData({ mssv: s.mssv, card_id: s.card_id || '', full_name: s.full_name, email: s.email || '', faculty: s.faculty || '', class_name: s.class_name || '' })
+    setFormData({ mssv: s.mssv, card_id: s.card_id || '', full_name: s.full_name, email: s.email || '', faculty: s.faculty || '', class_name: s.class_name || '', course_year: s.course_year || '' })
     setIsModalOpen(true)
   }
 
@@ -84,7 +84,7 @@ function StudentManagementPage() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ card_id: formData.card_id, full_name: formData.full_name, email: formData.email, faculty: formData.faculty || null, class_name: formData.class_name || null }),
+          body: JSON.stringify({ card_id: formData.card_id, full_name: formData.full_name, email: formData.email, faculty: formData.faculty || null, class_name: formData.class_name || null, course_year: formData.course_year || null }),
         })
       } else {
         res = await fetch(API_URL, {
@@ -163,7 +163,8 @@ function StudentManagementPage() {
       s.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.mssv.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (s.faculty || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (s.class_name || '').toLowerCase().includes(searchTerm.toLowerCase())
+      (s.class_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.course_year || '').toLowerCase().includes(searchTerm.toLowerCase())
     ),
     [students, searchTerm]
   )
@@ -215,7 +216,7 @@ function StudentManagementPage() {
         <Search size={18} className="search-icon" />
         <input
           type="text"
-          placeholder="Tìm kiếm theo tên, MSSV, khoa hoặc lớp..."
+          placeholder="Tìm kiếm theo tên, MSSV, trường/viện, khóa hoặc lớp..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           id="search-students"
@@ -246,7 +247,8 @@ function StudentManagementPage() {
                   <th>MSSV</th>
                   <th>Mã thẻ (Card ID)</th>
                   <th>Họ và Tên</th>
-                  <th>Khoa</th>
+                  <th>Trường / Viện</th>
+                  <th>Khóa</th>
                   <th>Lớp</th>
                   <th>Email</th>
                   <th style={{ width: 100, textAlign: 'center' }}>Thao tác</th>
@@ -260,6 +262,7 @@ function StudentManagementPage() {
                     <td className="rfid-cell">{s.card_id}</td>
                     <td>{s.full_name}</td>
                     <td className="faculty-cell">{s.faculty || '—'}</td>
+                    <td className="course-year-cell">{s.course_year || '—'}</td>
                     <td className="class-cell">{s.class_name || '—'}</td>
                     <td>{s.email}</td>
                     <td>
@@ -284,7 +287,7 @@ function StudentManagementPage() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan="8" className="empty-state">
+                    <td colSpan="9" className="empty-state">
                       <div className="empty-state-content">
                         <div className="empty-state-icon">
                           <Users size={28} />

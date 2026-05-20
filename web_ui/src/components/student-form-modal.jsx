@@ -98,21 +98,33 @@ function StudentFormModal({ isOpen, onClose, onSubmit, formData, onChange, isEdi
             />
           </div>
 
-          {/* Faculty dropdown + Class text input */}
+          {/* Faculty dropdown + Course year + Class text input */}
           <div className="field-row">
             <div className="field-group">
-              <label htmlFor="modal-faculty">Khoa / Trường</label>
+              <label htmlFor="modal-faculty">Trường / Viện</label>
               <select
                 id="modal-faculty"
                 name="faculty"
                 value={formData.faculty}
                 onChange={onChange}
               >
-                <option value="">-- Chọn Khoa --</option>
+                <option value="">-- Chọn Trường / Viện --</option>
                 {FACULTIES.map((f) => (
                   <option key={f} value={f}>{f}</option>
                 ))}
               </select>
+            </div>
+
+            <div className="field-group">
+              <label htmlFor="modal-course-year">Khóa</label>
+              <input
+                id="modal-course-year"
+                type="text"
+                name="course_year"
+                value={formData.course_year}
+                onChange={onChange}
+                placeholder="Nhập khóa (vd: K67)"
+              />
             </div>
 
             {/* Class name - free text input */}
@@ -124,7 +136,7 @@ function StudentFormModal({ isOpen, onClose, onSubmit, formData, onChange, isEdi
                 name="class_name"
                 value={formData.class_name}
                 onChange={onChange}
-                placeholder="Nhập tên lớp (vd: KHMT, KTMT)"
+                placeholder="Nhập tên lớp (vd: Global ICT 01)"
               />
             </div>
           </div>
