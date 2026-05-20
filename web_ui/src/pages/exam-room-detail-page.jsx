@@ -319,7 +319,7 @@ function ExamRoomDetailPage() {
             onChange={e => setSelectedDeviceId(e.target.value)}
             className="device-select"
           >
-            <option value="">-- Chọn thiết bị chưa sử dụng --</option>
+            <option value="">-- Chọn thiết bị --</option>
             {allDevices.filter(d => d.assigned_room_id !== parseInt(roomId)).map(d => (
               <option key={d.id} value={d.id}>{d.name} ({d.device_id})</option>
             ))}
