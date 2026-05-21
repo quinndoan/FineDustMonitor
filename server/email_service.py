@@ -1,20 +1,13 @@
 import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import httpx
 import logging
 
 logger = logging.getLogger(__name__)
 
+
 def send_registration_email(to_email: str, full_name: str):
-    """
-    Gửi email thông báo đăng ký thành công.
-    Nếu chưa cấu hình SMTP trong biến môi trường, sẽ in log.
-    """
-    SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
-    SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-    SMTP_USER = os.getenv("SMTP_USER", "")
-    SMTP_PASS = os.getenv("SMTP_PASS", "")
+    """Gửi email thông báo đăng ký thành công qua Resend API."""
+    RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 
     subject = "Đăng ký tài khoản thành công - Hệ thống Quản lý Sinh viên"
     body = f"""
@@ -27,27 +20,33 @@ def send_registration_email(to_email: str, full_name: str):
       </body>
     </html>
     """
-    
-    if not SMTP_USER or not SMTP_PASS:
-        logger.warning(f"Chưa cấu hình SMTP. Bỏ qua gửi email tới: {to_email}")
-        logger.info(f"Nội dung email:\n{body}")
-        return False
-        
-    try:
-        msg = MIMEMultipart()
-        msg['From'] = SMTP_USER
-        msg['To'] = to_email
-        msg['Subject'] = subject
-        msg.attach(MIMEText(body, 'html'))
 
-        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASS)
-        server.send_message(msg)
-        server.quit()
-        
-        logger.info(f"Đã gửi email đăng ký thành công tới {to_email}")
-        return True
+    if not RESEND_API_KEY:
+        logger.warning(f"RESEND_API_KEY chưa cấu hình. Bỏ qua gửi email tới: {to_email}")
+        return False
+
+    try:
+        response = httpx.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": f"Hệ thống Quản lý <onboarding@resend.dev>",
+                "to": [to_email],
+                "subject": subject,
+                "html": body,
+            },
+            timeout=10,
+        )
+
+        if response.status_code == 200:
+            logger.info(f"Đã gửi email đăng ký thành công tới {to_email}")
+            return True
+        else:
+            logger.error(f"[RESEND ERROR] {response.status_code}: {response.text}")
+            return False
     except Exception as e:
-        logger.error(f"Lỗi khi gửi email tới {to_email}: {e}")
+        logger.error(f"[RESEND ERROR] Lỗi khi gửi email tới {to_email}: {e}")
         return False

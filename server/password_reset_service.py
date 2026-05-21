@@ -1,15 +1,13 @@
 """
 Password reset service: generates OTP codes, stores them in-memory with expiry,
-and sends reset emails via SMTP.
+and sends reset emails via Resend API (HTTPS).
 """
 import os
 import random
 import string
-import smtplib
 import logging
+import httpx
 from datetime import datetime, timedelta
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from threading import Lock
 
 logger = logging.getLogger(__name__)
@@ -62,16 +60,11 @@ def verify_otp(email: str, code: str) -> bool:
 
 def send_password_reset_email(to_email: str, otp_code: str) -> bool:
     """
-    Send password reset OTP email.
+    Send password reset OTP email via Resend API.
     Returns True on success, False on failure.
     """
-    SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
-    SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+    RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
     SMTP_USER = os.getenv("SMTP_USER", "")
-    SMTP_PASS = os.getenv("SMTP_PASS", "")
-
-    logger.info(f"[RESET EMAIL] Bắt đầu gửi mail tới {to_email}")
-    logger.info(f"[RESET EMAIL] SMTP_HOST={SMTP_HOST}, PORT={SMTP_PORT}, USER={'có' if SMTP_USER else 'TRỐNG'}, PASS={'có' if SMTP_PASS else 'TRỐNG'}")
 
     subject = "Mã xác nhận đặt lại mật khẩu - Hệ thống Quản lý Sinh viên"
     body = f"""
@@ -92,34 +85,32 @@ def send_password_reset_email(to_email: str, otp_code: str) -> bool:
     </html>
     """
 
-    if not SMTP_USER or not SMTP_PASS:
-        logger.warning(f"SMTP chưa cấu hình. OTP cho {to_email}: {otp_code}")
-        return True  # Still return True so the flow continues in dev mode
+    if not RESEND_API_KEY:
+        logger.warning(f"RESEND_API_KEY chưa cấu hình. OTP cho {to_email}: {otp_code}")
+        return True
 
     try:
-        msg = MIMEMultipart()
-        msg['From'] = SMTP_USER
-        msg['To'] = to_email
-        msg['Subject'] = subject
-        msg.attach(MIMEText(body, 'html'))
+        response = httpx.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": f"Hệ thống Quản lý <onboarding@resend.dev>",
+                "to": [to_email],
+                "subject": subject,
+                "html": body,
+            },
+            timeout=10,
+        )
 
-        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASS)
-        server.send_message(msg)
-        server.quit()
-
-        logger.info(f"Đã gửi mã đặt lại mật khẩu tới {to_email}")
-        return True
-    except smtplib.SMTPAuthenticationError as e:
-        logger.error(f"[SMTP AUTH FAILED] Gmail chặn đăng nhập từ server: {e}")
-        return False
-    except smtplib.SMTPConnectError as e:
-        logger.error(f"[SMTP CONNECT FAILED] Không kết nối được tới SMTP server: {e}")
-        return False
-    except TimeoutError as e:
-        logger.error(f"[SMTP TIMEOUT] Port 587 có thể bị chặn: {e}")
-        return False
+        if response.status_code == 200:
+            logger.info(f"Đã gửi mã đặt lại mật khẩu tới {to_email}")
+            return True
+        else:
+            logger.error(f"[RESEND ERROR] {response.status_code}: {response.text}")
+            return False
     except Exception as e:
-        logger.error(f"[SMTP ERROR] Lỗi gửi email tới {to_email}: {type(e).__name__}: {e}")
+        logger.error(f"[RESEND ERROR] Lỗi gửi email tới {to_email}: {type(e).__name__}: {e}")
         return False
