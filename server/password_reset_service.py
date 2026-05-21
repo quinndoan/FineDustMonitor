@@ -70,6 +70,9 @@ def send_password_reset_email(to_email: str, otp_code: str) -> bool:
     SMTP_USER = os.getenv("SMTP_USER", "")
     SMTP_PASS = os.getenv("SMTP_PASS", "")
 
+    logger.info(f"[RESET EMAIL] Bắt đầu gửi mail tới {to_email}")
+    logger.info(f"[RESET EMAIL] SMTP_HOST={SMTP_HOST}, PORT={SMTP_PORT}, USER={'có' if SMTP_USER else 'TRỐNG'}, PASS={'có' if SMTP_PASS else 'TRỐNG'}")
+
     subject = "Mã xác nhận đặt lại mật khẩu - Hệ thống Quản lý Sinh viên"
     body = f"""
     <html>

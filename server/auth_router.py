@@ -26,6 +26,28 @@ from password_reset_service import (
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 
+@router.get("/test-smtp")
+def test_smtp():
+    """Endpoint tạm để test kết nối SMTP trên server. XÓA SAU KHI DEBUG XONG."""
+    import os, smtplib
+    host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    port = int(os.getenv("SMTP_PORT", 587))
+    user = os.getenv("SMTP_USER", "")
+    pwd = os.getenv("SMTP_PASS", "")
+
+    if not user or not pwd:
+        return {"status": "error", "detail": "SMTP_USER hoặc SMTP_PASS trống"}
+
+    try:
+        server = smtplib.SMTP(host, port, timeout=10)
+        server.starttls()
+        server.login(user, pwd)
+        server.quit()
+        return {"status": "ok", "detail": "Kết nối SMTP thành công"}
+    except Exception as e:
+        return {"status": "error", "detail": f"{type(e).__name__}: {e}"}
+
+
 # ---------------------------------------------------------------------------
 # Request / Response schemas
 # ---------------------------------------------------------------------------
