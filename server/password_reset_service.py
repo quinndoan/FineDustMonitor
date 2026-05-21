@@ -108,6 +108,15 @@ def send_password_reset_email(to_email: str, otp_code: str) -> bool:
 
         logger.info(f"Đã gửi mã đặt lại mật khẩu tới {to_email}")
         return True
+    except smtplib.SMTPAuthenticationError as e:
+        logger.error(f"[SMTP AUTH FAILED] Gmail chặn đăng nhập từ server: {e}")
+        return False
+    except smtplib.SMTPConnectError as e:
+        logger.error(f"[SMTP CONNECT FAILED] Không kết nối được tới SMTP server: {e}")
+        return False
+    except TimeoutError as e:
+        logger.error(f"[SMTP TIMEOUT] Port 587 có thể bị chặn: {e}")
+        return False
     except Exception as e:
-        logger.error(f"Lỗi gửi email đặt lại mật khẩu tới {to_email}: {e}")
+        logger.error(f"[SMTP ERROR] Lỗi gửi email tới {to_email}: {type(e).__name__}: {e}")
         return False
