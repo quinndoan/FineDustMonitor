@@ -89,8 +89,46 @@ export function AuthProvider({ children }) {
     setUser(null)
   }, [])
 
+  const updateProfile = useCallback(async (data) => {
+    const res = await fetch(`${API_BASE}/me`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    })
+
+    const result = await res.json()
+
+    if (!res.ok) {
+      throw new Error(result.detail || 'Cập nhật thất bại')
+    }
+
+    setUser(result)
+    return result
+  }, [token])
+
+  const deleteAccount = useCallback(async () => {
+    const res = await fetch(`${API_BASE}/me`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+
+    const result = await res.json()
+
+    if (!res.ok) {
+      throw new Error(result.detail || 'Xóa tài khoản thất bại')
+    }
+
+    localStorage.removeItem('token')
+    setToken(null)
+    setUser(null)
+    return result
+  }, [token])
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, updateProfile, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   )

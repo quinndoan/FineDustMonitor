@@ -67,6 +67,12 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
 
 
+class UpdateUserRequest(BaseModel):
+    full_name: str | None = None
+    department: str | None = None
+    email: str | None = None
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -133,6 +139,45 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 def get_me(current_user: User = Depends(get_current_user)):
     """Lấy thông tin user hiện tại từ JWT token."""
     return UserResponse.model_validate(current_user)
+
+
+@router.put("/me", response_model=UserResponse)
+def update_me(
+    payload: UpdateUserRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Cập nhật thông tin user hiện tại."""
+    if payload.email and payload.email != current_user.email:
+        existing = db.query(User).filter(User.email == payload.email).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email này đã được sử dụng.",
+            )
+        current_user.email = payload.email
+
+    if payload.full_name is not None:
+        current_user.full_name = payload.full_name
+    if payload.department is not None:
+        current_user.department = payload.department
+
+    db.commit()
+    db.refresh(current_user)
+    return UserResponse.model_validate(current_user)
+
+
+@router.delete("/me")
+def delete_me(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Xóa tài khoản user hiện tại."""
+    email = current_user.email
+    full_name = current_user.full_name
+    db.delete(current_user)
+    db.commit()
+    return {"message": "Tài khoản đã được xóa.", "email": email, "full_name": full_name}
 
 
 # ---------------------------------------------------------------------------

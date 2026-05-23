@@ -7,6 +7,7 @@ import ExamRoomManagementPage from './pages/exam-room-management-page'
 import ExamRoomDetailPage from './pages/exam-room-detail-page'
 import ExamSchedulePage from './pages/exam-schedule-page'
 import DeviceManagementPage from './pages/device-management-page'
+import ProfilePage from './pages/profile-page'
 import AppLayout from './components/app-layout'
 
 /**
@@ -55,6 +56,7 @@ function App() {
           <Route path="/exam-rooms/:roomId" element={<ExamRoomDetailPage />} />
           <Route path="/schedule" element={<ExamSchedulePage />} />
           <Route path="/devices" element={<DeviceManagementPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

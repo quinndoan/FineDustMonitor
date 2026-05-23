@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, LogOut, Activity, DoorOpen, Calendar, Wifi } from 'lucide-react'
+import { LayoutDashboard, Users, LogOut, Activity, DoorOpen, Calendar, Wifi, UserCog } from 'lucide-react'
 import { useAuth } from '../contexts/auth-context'
 import './app-layout.css'
 
@@ -77,6 +77,13 @@ function AppLayout() {
           >
             <Wifi size={20} className="nav-icon" />
             <span>Thiết bị</span>
+          </NavLink>
+          <NavLink
+            to="/profile"
+            className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+          >
+            <UserCog size={20} className="nav-icon" />
+            <span>Tài khoản</span>
           </NavLink>
         </nav>
 
