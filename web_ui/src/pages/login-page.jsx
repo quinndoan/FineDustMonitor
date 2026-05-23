@@ -126,7 +126,14 @@ function LoginPage() {
         throw new Error(data.detail || 'Có lỗi xảy ra.')
       }
 
+      console.log('[DEBUG] EmailJS config:', { EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY })
+      console.log('[DEBUG] OTP from backend:', data.otp_code)
+
       if (data.otp_code) {
+        if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
+          console.error('[DEBUG] EmailJS env vars missing!')
+          throw new Error('Cấu hình EmailJS chưa đầy đủ.')
+        }
         await emailjs.send(
           EMAILJS_SERVICE_ID,
           EMAILJS_TEMPLATE_ID,
