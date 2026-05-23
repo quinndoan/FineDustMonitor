@@ -118,12 +118,26 @@ export default function ProfilePage() {
               <Building2 size={16} />
               Khoa / Phòng ban
             </label>
-            <input
+            <select
               id="profile-dept"
-              type="text"
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
-            />
+            >
+              <option value="">-- Chọn Khoa / Phòng ban --</option>
+              <option value="Trường Cơ khí">Trường Cơ khí</option>
+              <option value="Trường Công nghệ Thông tin và Truyền thông">Trường Công nghệ Thông tin và Truyền thông</option>
+              <option value="Trường Điện - Điện tử">Trường Điện - Điện tử</option>
+              <option value="Trường Vật liệu">Trường Vật liệu</option>
+              <option value="Trường Hóa và Khoa học sự sống">Trường Hóa và Khoa học sự sống</option>
+              <option value="Trường Kinh tế">Trường Kinh tế</option>
+              <option value="Khoa Khoa học và Công nghệ Giáo dục">Khoa Khoa học và Công nghệ Giáo dục</option>
+              <option value="Khoa Vật lý kỹ thuật">Khoa Vật lý kỹ thuật</option>
+              <option value="Khoa Toán - Tin">Khoa Toán - Tin</option>
+              <option value="Khoa Ngoại ngữ">Khoa Ngoại ngữ</option>
+              <option value="Khoa Giáo dục Quốc phòng và An ninh">Khoa Giáo dục Quốc phòng và An ninh</option>
+              <option value="Khoa Giáo dục thể chất">Khoa Giáo dục thể chất</option>
+              <option value="Khoa Lý luận chính trị">Khoa Lý luận chính trị</option>
+            </select>
           </div>
 
           <button type="submit" className="btn-save" disabled={saving}>
