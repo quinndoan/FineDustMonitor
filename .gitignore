@@ -12,3 +12,5 @@ compile_commands.json
 server/.env
 server/credentials.json
 server/_pycache_/
+
+web_ui/.env

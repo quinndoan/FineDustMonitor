@@ -19,7 +19,6 @@ from password_reset_service import (
     generate_otp,
     store_otp,
     verify_otp,
-    send_password_reset_email,
 )
 
 
@@ -143,26 +142,24 @@ def get_me(current_user: User = Depends(get_current_user)):
 @router.post("/request-reset")
 def request_password_reset(
     payload: RequestResetRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     """
-    Gửi mã OTP qua email để đặt lại mật khẩu.
+    Tạo mã OTP và trả về cho frontend để gửi email qua EmailJS.
     Luôn trả về 200 để tránh lộ email tồn tại hay không.
     """
     user = db.query(User).filter(User.email == payload.email).first()
 
     if not user:
-        # Không tiết lộ email không tồn tại
         return {"message": "Nếu email tồn tại, mã xác nhận đã được gửi."}
 
     otp_code = generate_otp()
     store_otp(payload.email, otp_code)
 
-    # Gửi email trong background để response nhanh
-    background_tasks.add_task(send_password_reset_email, payload.email, otp_code)
-
-    return {"message": "Nếu email tồn tại, mã xác nhận đã được gửi."}
+    return {
+        "message": "Nếu email tồn tại, mã xác nhận đã được gửi.",
+        "otp_code": otp_code,
+    }
 
 
 @router.post("/reset-password")

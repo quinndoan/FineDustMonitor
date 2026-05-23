@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Mail, Lock, User, ArrowRight, Activity, Building2, Loader2, KeyRound, ArrowLeft, ShieldCheck, CheckCircle2 } from 'lucide-react'
+import emailjs from '@emailjs/browser'
 import { useAuth } from '../contexts/auth-context'
 import { API_BASE_URL } from '../config'
 import './login-page.css'
 
 const API_BASE = `${API_BASE_URL}/api/auth`
+
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
 
 /**
  * Login / Register / Forgot Password page.
@@ -121,10 +126,23 @@ function LoginPage() {
         throw new Error(data.detail || 'Có lỗi xảy ra.')
       }
 
+      if (data.otp_code) {
+        await emailjs.send(
+          EMAILJS_SERVICE_ID,
+          EMAILJS_TEMPLATE_ID,
+          {
+            to_email: forgotEmail,
+            otp_code: data.otp_code,
+            expiry_minutes: '10',
+          },
+          EMAILJS_PUBLIC_KEY
+        )
+      }
+
       setSuccessMessage('Mã xác nhận đã được gửi tới email của bạn.')
       setForgotStep('otp')
     } catch (err) {
-      setForgotError(err.message)
+      setForgotError(err.message || 'Không thể gửi mã xác nhận. Vui lòng thử lại.')
     } finally {
       setForgotLoading(false)
     }

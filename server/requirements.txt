@@ -10,4 +10,3 @@ python-multipart
 google-api-python-client
 google-auth
 paho-mqtt==1.6.1
-httpx
