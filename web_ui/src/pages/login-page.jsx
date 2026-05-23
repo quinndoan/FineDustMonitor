@@ -10,6 +10,7 @@ const API_BASE = `${API_BASE_URL}/api/auth`
 
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
 const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
+const EMAILJS_TEMPLATE_NOTIFY_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_NOTIFY_ID
 const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
 
 /**
@@ -75,8 +76,8 @@ function LoginPage() {
     try {
       if (isRegister) {
         await register(email, password, fullName, department)
-        if (EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY) {
-          emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        if (EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_NOTIFY_ID && EMAILJS_PUBLIC_KEY) {
+          emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_NOTIFY_ID, {
             to_email: email,
             subject: 'Đăng ký tài khoản thành công',
             message: `Xin chào ${fullName}, tài khoản của bạn đã được tạo thành công trên Hệ thống Quản lý Sinh viên vào phòng thi.`,

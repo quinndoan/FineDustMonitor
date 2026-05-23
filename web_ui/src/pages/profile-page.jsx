@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/auth-context'
 import './profile-page.css'
 
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
-const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
+const EMAILJS_TEMPLATE_NOTIFY_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_NOTIFY_ID
 const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
 
 export default function ProfilePage() {
@@ -23,9 +23,9 @@ export default function ProfilePage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const sendNotificationEmail = async (templateParams) => {
-    if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) return
+    if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_NOTIFY_ID || !EMAILJS_PUBLIC_KEY) return
     try {
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams, EMAILJS_PUBLIC_KEY)
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_NOTIFY_ID, templateParams, EMAILJS_PUBLIC_KEY)
     } catch (e) {
       console.error('EmailJS error:', e)
     }
