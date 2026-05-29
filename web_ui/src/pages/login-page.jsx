@@ -137,22 +137,24 @@ function LoginPage() {
       console.log('[DEBUG] EmailJS config:', { EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY })
       console.log('[DEBUG] OTP from backend:', data.otp_code)
 
-      if (data.otp_code) {
-        if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
-          console.error('[DEBUG] EmailJS env vars missing!')
-          throw new Error('Cấu hình EmailJS chưa đầy đủ.')
-        }
-        await emailjs.send(
-          EMAILJS_SERVICE_ID,
-          EMAILJS_TEMPLATE_ID,
-          {
-            to_email: forgotEmail,
-            otp_code: data.otp_code,
-            expiry_minutes: '10',
-          },
-          EMAILJS_PUBLIC_KEY
-        )
+      if (!data.otp_code) {
+        throw new Error('Email không tồn tại trong hệ thống.')
       }
+
+      if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
+        console.error('[DEBUG] EmailJS env vars missing!')
+        throw new Error('Cấu hình EmailJS chưa đầy đủ.')
+      }
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        {
+          to_email: forgotEmail,
+          otp_code: data.otp_code,
+          expiry_minutes: '10',
+        },
+        EMAILJS_PUBLIC_KEY
+      )
 
       setSuccessMessage('Mã xác nhận đã được gửi tới email của bạn.')
       setForgotStep('otp')
