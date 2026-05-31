@@ -83,10 +83,14 @@ function LoginPage() {
             message: `Xin chào ${fullName}, tài khoản của bạn đã được tạo thành công trên Hệ thống Quản lý Sinh viên vào phòng thi.`,
           }, EMAILJS_PUBLIC_KEY).catch(() => {})
         }
+        setSuccessMessage('Đăng ký thành công! Đang chuyển hướng...')
+        setTimeout(() => {
+          navigate('/dashboard')
+        }, 2000)
       } else {
         await login(email, password)
+        navigate('/dashboard')
       }
-      navigate('/dashboard')
     } catch (err) {
       setError(err.message || 'Có lỗi xảy ra. Vui lòng thử lại.')
     } finally {
@@ -422,6 +426,13 @@ function LoginPage() {
         {error && (
           <div className="login-error" id="login-error">
             {error}
+          </div>
+        )}
+
+        {/* Success message */}
+        {successMessage && !forgotStep && (
+          <div className="forgot-success" id="register-success">
+            {successMessage}
           </div>
         )}
 
