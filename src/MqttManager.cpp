@@ -55,6 +55,9 @@ void MqttManager::sendStartupPacket() {
  * @return True nếu kết nối thành công với MQTT Broker
  */
 bool MqttManager::setup() {
+    if (!client.setBufferSize(1024)) {
+        Serial.println(F("[MQTT] Failed to allocate 1024-byte packet buffer."));
+    }
     client.setServer(MQTT_SERVER, MQTT_PORT);
     client.setCallback(this->callback);
 

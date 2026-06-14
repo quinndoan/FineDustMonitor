@@ -68,13 +68,37 @@ def on_message(client, userdata, msg):
     except Exception as e:
         logging.error(f"[MQTT] Error processing message: {e}")
 
+def publish_verify_result(device_id: str, response: dict):
+    if not mqtt_client:
+        logging.warning(f"[MQTT] Cannot publish verify result to {device_id}: MQTT client is not ready")
+        return
+
+    topic = f"monitor_student/{device_id}/cmd"
+    payload = json.dumps(response, ensure_ascii=False)
+    mqtt_client.publish(topic, payload)
+    logging.info(f"[MQTT] Published verify result to {topic}: {payload}")
+
 def process_scan(device_id: str, scan_type: str, data: dict):
     db = SessionLocal()
     try:
         logging.info(f"[MQTT] Processing scan - Device: {device_id}, Type: {scan_type}, Data: {data}")
         device = db.query(Device).filter(Device.device_id == device_id).first()
-        if not device or not device.assigned_room_id:
-            logging.warning(f"[MQTT] Device {device_id} is not assigned to any room. Ignoring scan.")
+        if not device:
+            logging.warning(f"[MQTT] Device {device_id} is not registered. Rejecting scan.")
+            publish_verify_result(device_id, {
+                "action": "verify_result",
+                "status": "denied",
+                "message": "Device not registered",
+            })
+            return
+
+        if not device.assigned_room_id:
+            logging.warning(f"[MQTT] Device {device_id} is not assigned to any room. Rejecting scan.")
+            publish_verify_result(device_id, {
+                "action": "verify_result",
+                "status": "denied",
+                "message": "Device not assigned",
+            })
             return
 
         room_id = device.assigned_room_id
@@ -83,9 +107,7 @@ def process_scan(device_id: str, scan_type: str, data: dict):
         room = db.query(ExamRoom).filter(ExamRoom.id == room_id).first()
         if not room or not room.is_active:
             logging.warning(f"[MQTT] Room {room_id} attendance is closed. Ignoring scan from {device_id}.")
-            if mqtt_client:
-                response = {"action": "verify_result", "status": "denied", "message": "Room closed"}
-                mqtt_client.publish(f"monitor_student/{device_id}/cmd", json.dumps(response))
+            publish_verify_result(device_id, {"action": "verify_result", "status": "denied", "message": "Room closed"})
             return
         # Extract raw scan data for logging
         raw_scan_data = data.get("uid", data.get("qr_data", str(data)))
@@ -144,14 +166,13 @@ def process_scan(device_id: str, scan_type: str, data: dict):
                 logging.info(f"[MQTT] Successfully marked student {student.mssv} PRESENT in room {room_id}")
                 
                 # Publish result back to ESP32
-                if mqtt_client:
-                    response = {
-                        "action": "verify_result",
-                        "status": "accepted",
-                        "mssv": student.mssv,
-                        "name": student.full_name
-                    }
-                    mqtt_client.publish(f"monitor_student/{device_id}/cmd", json.dumps(response))
+                response = {
+                    "action": "verify_result",
+                    "status": "accepted",
+                    "mssv": student.mssv,
+                    "name": student.full_name
+                }
+                publish_verify_result(device_id, response)
 
                 # Broadcast websocket — exam room detail
                 if main_loop:
@@ -184,9 +205,7 @@ def process_scan(device_id: str, scan_type: str, data: dict):
                     room_id=room_id,
                 ))
                 db.commit()
-                if mqtt_client:
-                    response = {"action": "verify_result", "status": "denied", "message": "Not in room"}
-                    mqtt_client.publish(f"monitor_student/{device_id}/cmd", json.dumps(response))
+                publish_verify_result(device_id, {"action": "verify_result", "status": "denied", "message": "Not in room"})
                 # Broadcast websocket — dashboard real-time update
                 if main_loop:
                     import asyncio
@@ -208,9 +227,7 @@ def process_scan(device_id: str, scan_type: str, data: dict):
                 room_id=room_id,
             ))
             db.commit()
-            if mqtt_client:
-                response = {"action": "verify_result", "status": "denied", "message": "Not found"}
-                mqtt_client.publish(f"monitor_student/{device_id}/cmd", json.dumps(response))
+            publish_verify_result(device_id, {"action": "verify_result", "status": "denied", "message": "Not found"})
             # Broadcast websocket — dashboard real-time update
             if main_loop:
                 import asyncio

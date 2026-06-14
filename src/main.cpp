@@ -3,6 +3,7 @@
 
 // Hardware configuration MUST be included first
 #include "HardwareConfig.h"
+
 // Core modules (always included)
 #include "ApiManager.h"    // Request HTTPS kiểm tra MSSV với Google Sheet
 #include "ConfigManager.h" // Cấu hình ghi bộ nhớ Flash
@@ -12,7 +13,7 @@
 #if ENABLE_OLED_DISPLAY
 
 // Màn hình và I2C
-#include "OledBackdrop.h" // Giao diện chào trên màn hình điện tử
+#include "OledBackdrop.h"
 #include <U8g2lib.h>
 #include <Wire.h>
 
@@ -56,14 +57,6 @@
 #include "Rfid125khzManager.h" // Quản lý RFID 125kHz
 #include "WifiManager.h"       // Quản lý wifi
 #include "main.h"              // Thông tin dev
-
-
-// --- KHÔNG CÒN SỬ DỤNG MODULE BỤI SDS011 ---
-
-// LED status indicator
-// LED_BUILTIN is defined in HardwareConfig.h
-
-// --- GLOBAL OBJECTS (conditionally defined based on features) ---
 
 // OLED Display
 #if ENABLE_OLED_DISPLAY
@@ -308,6 +301,40 @@ void renderCurrentMode() {
   }
 }
 
+extern bool mqttVerifyReceived;
+extern bool mqttVerifyAccepted;
+extern String mqttVerifyMssv;
+extern String mqttVerifyName;
+
+static void resetMqttVerifyState() {
+  mqttVerifyReceived = false;
+  mqttVerifyAccepted = false;
+  mqttVerifyMssv = "";
+  mqttVerifyName = "";
+}
+
+static bool waitForMqttVerifyResult(unsigned long timeoutMs) {
+  unsigned long startWait = millis();
+  while (millis() - startWait < timeoutMs) {
+    if (wifiStatus)
+      mqttMgr.loop();
+    if (mqttVerifyReceived)
+      return true;
+    delay(10);
+  }
+  return false;
+}
+
+static void showMqttTransactionError(const char *message) {
+  u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_7x14B_tr);
+  u8g2.drawUTF8(5, 35, message);
+  u8g2.sendBuffer();
+  buzzerMgr.beepError();
+  delay(2000);
+  renderCurrentMode();
+}
+
 void handleCardCheck(String tag, const char *logPrefix) {
   buzzerMgr.beepShort(); // Bíp ngắn chạm thẻ cực nhạy
 
@@ -315,11 +342,20 @@ void handleCardCheck(String tag, const char *logPrefix) {
   Serial.print(" Tag UID: ");
   Serial.println(tag);
 
+  resetMqttVerifyState();
+
   // Gửi data lên MQTT theo từng topic riêng biệt
+  bool publishOk = false;
   if (String(logPrefix).indexOf("RFID") >= 0) {
-      mqttMgr.publishRfid(tag);
+      publishOk = mqttMgr.publishRfid(tag);
   } else if (String(logPrefix).indexOf("NFC") >= 0) {
-      mqttMgr.publishNfc(tag);
+      publishOk = mqttMgr.publishNfc(tag);
+  }
+
+  if (!publishOk) {
+      Serial.println("[MQTT] Card scan publish failed.");
+      showMqttTransactionError("MQTT Send Error");
+      return;
   }
 
   // --- BƯỚC 4: GỌI API KIỂM TRA HỢP LỆ VÀ XUẤT LÊN MÀN HÌNH ---
@@ -329,35 +365,18 @@ void handleCardCheck(String tag, const char *logPrefix) {
   u8g2.sendBuffer();
 
   // Đợi phản hồi từ MQTT
-  extern bool mqttVerifyReceived;
-  extern bool mqttVerifyAccepted;
-  extern String mqttVerifyMssv;
-  extern String mqttVerifyName;
-
-  mqttVerifyReceived = false;
-  unsigned long startWait = millis();
-  while (millis() - startWait < 5000) {
-      if (wifiStatus) mqttMgr.loop();
-      if (mqttVerifyReceived) break;
-      delay(10);
-  }
+  const bool received = waitForMqttVerifyResult(5000);
 
   bool isAccepted = false;
   String studentId = "";
   String studentName = "";
 
-  if (mqttVerifyReceived) {
+  if (received) {
       isAccepted = mqttVerifyAccepted;
       studentId = mqttVerifyMssv;
       studentName = mqttVerifyName;
   } else {
-      u8g2.clearBuffer();
-      u8g2.setFont(u8g2_font_7x14B_tr);
-      u8g2.drawUTF8(5, 35, "Timeout / Error");
-      u8g2.sendBuffer();
-      buzzerMgr.beepError();
-      delay(2000);
-      renderCurrentMode();
+      showMqttTransactionError("Timeout / Error");
       return;
   }
 
@@ -434,11 +453,17 @@ void handleQrCardCheck(const String &qrPayload) {
   Serial.print(" Name: ");
   Serial.println(parsedName.length() > 0 ? parsedName : "(chờ backend)");
 
+  resetMqttVerifyState();
+
   // Bước 2: Gửi lên MQTT
   //   Kiểu 1 — gửi nguyên URL gốc (backend parse lại)
   //   Kiểu 2 — gửi MSSV thuần (backend tra cứu trực tiếp theo mssv)
   const String &mqttPayload = isHustUrl ? qrPayload : parsedStudentId;
-  mqttMgr.publishQr(mqttPayload);
+  if (!mqttMgr.publishQr(mqttPayload)) {
+    Serial.println("[MQTT] QR scan publish failed.");
+    showMqttTransactionError("MQTT Send Error");
+    return;
+  }
 
   // Bước 3: Hiển thị Processing trên OLED
   u8g2.clearBuffer();
@@ -447,35 +472,18 @@ void handleQrCardCheck(const String &qrPayload) {
   u8g2.sendBuffer();
 
   // Bước 4: Đợi phản hồi từ MQTT
-  extern bool mqttVerifyReceived;
-  extern bool mqttVerifyAccepted;
-  extern String mqttVerifyMssv;
-  extern String mqttVerifyName;
-
-  mqttVerifyReceived = false;
-  unsigned long startWait = millis();
-  while (millis() - startWait < 5000) {
-      if (wifiStatus) mqttMgr.loop();
-      if (mqttVerifyReceived) break;
-      delay(10);
-  }
+  const bool received = waitForMqttVerifyResult(5000);
 
   bool isAccepted = false;
   String studentId = parsedStudentId;
   String studentName = parsedName;
 
-  if (mqttVerifyReceived) {
+  if (received) {
       isAccepted = mqttVerifyAccepted;
       if (mqttVerifyMssv.length() > 0) studentId = mqttVerifyMssv;
       if (mqttVerifyName.length() > 0) studentName = mqttVerifyName;
   } else {
-      u8g2.clearBuffer();
-      u8g2.setFont(u8g2_font_7x14B_tr);
-      u8g2.drawUTF8(5, 35, "Timeout / Error");
-      u8g2.sendBuffer();
-      buzzerMgr.beepError();
-      delay(2000);
-      renderCurrentMode();
+      showMqttTransactionError("Timeout / Error");
       return;
   }
 
@@ -530,6 +538,23 @@ void loop() {
     }
   }
 
+   // Cập nhật dữ liệu từ module RFID 125kHz
+  rfid_update();
+
+  // Cập nhật dữ liệu từ module MFRC522 13.56MHz
+  nfc_update();
+
+  // Nếu vừa đọc được thẻ RFID
+  if (rfid_has_new_tag()) {
+    handleCardCheck(rfid_get_last_tag(), "[RFID/125kHz]");
+    rfid_flush(); // Xả buffer Serial2 + reset cooldown tránh xử lý trùng
+  }
+
+  // Nếu vừa đọc được thẻ NFC (Mifare)
+  if (nfc_has_new_tag()) {
+    handleCardCheck(nfc_get_last_tag(), "[NFC/MFRC522]");
+  }
+
   // Kiểm tra sự kiện phím bấm
   ButtonEvent evt = configBtn.update();
 
@@ -576,8 +601,6 @@ void loop() {
       } else {
         Serial.println("Bật WiFi");
         WakeupWiFi();
-        // hàm  handleWiFiConnection(); sẽ làm nốt phần việc còn lại ở đầu vòng
-        // lắp
       }
     }
   } else if (evt == LONG_PRESS_2S) {
@@ -592,20 +615,20 @@ void loop() {
     }
   }
 
-  // Cập nhật dữ liệu từ module RFID 125kHz
-  rfid_update();
+  // // Cập nhật dữ liệu từ module RFID 125kHz
+  // rfid_update();
 
-  // Cập nhật dữ liệu từ module MFRC522 13.56MHz
-  nfc_update();
+  // // Cập nhật dữ liệu từ module MFRC522 13.56MHz
+  // nfc_update();
 
-  // Nếu vừa đọc được thẻ RFID
-  if (rfid_has_new_tag()) {
-    handleCardCheck(rfid_get_last_tag(), "[RFID/125kHz]");
-    rfid_flush(); // Xả buffer Serial2 + reset cooldown tránh xử lý trùng
-  }
+  // // Nếu vừa đọc được thẻ RFID
+  // if (rfid_has_new_tag()) {
+  //   handleCardCheck(rfid_get_last_tag(), "[RFID/125kHz]");
+  //   rfid_flush(); // Xả buffer Serial2 + reset cooldown tránh xử lý trùng
+  // }
 
-  // Nếu vừa đọc được thẻ NFC (Mifare)
-  if (nfc_has_new_tag()) {
-    handleCardCheck(nfc_get_last_tag(), "[NFC/MFRC522]");
-  }
+  // // Nếu vừa đọc được thẻ NFC (Mifare)
+  // if (nfc_has_new_tag()) {
+  //   handleCardCheck(nfc_get_last_tag(), "[NFC/MFRC522]");
+  // }
 }
