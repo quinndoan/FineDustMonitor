@@ -5,11 +5,25 @@
 #include <LittleFS.h>
 
 // --- ĐỊNH NGHĨA TÊN FILE TRONG LITTLEFS ---
-#define FILE_WIFI_SSID    "/ssid.txt"
-#define FILE_WIFI_PASS    "/password.txt"
-#define FILE_DEVICE_ID    "/deviceid.txt"
-#define FILE_WIFI_ENABLE  "/enabled.txt"
-#define FILE_MQTT_ENABLE  "/mqtt_enabled.txt"
+#ifndef FILE_WIFI_SSID
+    #define FILE_WIFI_SSID "/ssid.txt"
+#endif
+
+#ifndef FILE_WIFI_PASS
+    #define FILE_WIFI_PASS "/password.txt"
+#endif
+
+#ifndef FILE_DEVICE_ID
+    #define FILE_DEVICE_ID "/deviceid.txt"
+#endif
+
+#ifndef FILE_WIFI_ENABLE
+    #define FILE_WIFI_ENABLE "/wifienabled.txt"
+#endif
+
+#ifndef FILE_MQTT_ENABLE
+    #define FILE_MQTT_ENABLE "/mqtt_enabled.txt"
+#endif
 
 struct PersistentParams {
     String ssid;

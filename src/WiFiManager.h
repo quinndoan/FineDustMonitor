@@ -25,9 +25,6 @@ void CheckAndEstablishWiFiConnection(unsigned long interval = WIFI_CHECK_INTERVA
 void WakeupWiFi();
 void ShutdownWiFi();
 
-// Apply spoofed STA MAC if WIFI_SPOOFED_STA_MAC is defined (ESP32 only)
-void WiFi_ApplySpoofedStaMacIfConfigured();
-
 /**
  * @brief Đăng ký thông tin WiFi dựa trên phương thức được chọn.
  * @param method Phương thức đăng ký (SELF_STATION: Web Captive Portal, SERIAL_INTERFACE: Qua Serial)
