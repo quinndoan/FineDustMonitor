@@ -50,7 +50,7 @@ function AppLayout() {
             className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
           >
             <Users size={20} className="nav-icon" />
-            <span>Quản lý SV</span>
+            <span>Sinh Viên</span>
           </NavLink>
           <NavLink
             to="/exam-rooms"
