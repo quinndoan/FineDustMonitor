@@ -19,8 +19,6 @@
 /// @brief the default wifi password
 #define AP_WIFI_PASSWORD "12345678"
 
-/// @brief loop times try to reconnect to the AP before activating the station mode
-#define MAX_TRY_WIFI_ACCESS 15
 
 /// @brief AP mode runs indefinitely until user triggers /restart or physical reset.
 /// The old ADHOC_STATION_DURATION timeout has been removed.
@@ -57,6 +55,5 @@ class WiFiSelfEnroll{
         char * GetSSID();
         char * GetPassword();
         char * GetDeviceID();
-        bool IsConfigOK();
 };
 #endif

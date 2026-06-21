@@ -323,68 +323,6 @@ char * WiFiSelfEnroll::GetDeviceID()  {
     return mydeviceid;
 }
 
-/**
- * @brief Kiểm tra xem ssid và password có chính xác không
- * @return true  kết nối mạng thành công
- * @return false 
- */
-bool WiFiSelfEnroll::IsConfigOK(){
-    // WiFi Access Status
-    wl_status_t wf_status;
-
-    // loop times try to reconnect to the AP before activating the station mode
-    byte try_access_times = MAX_TRY_WIFI_ACCESS;
-
-    /// Read the ssid and password stored in the flash memory
-    ReadWiFiConfig();
-
-    /// set as a Wi-Fi station and try to connect to the AP
-    WiFi.mode(WIFI_STA);
-    
-    WiFi.begin(GetSSID(), GetPassword());
-#ifdef _DEBUG_     
-    Serial.printf("Connecting to %s / %s\n", GetSSID(), GetPassword());
-#endif    
-    while (try_access_times > 0)
-    {
-        wf_status = WiFi.status();
-#ifdef _DEBUG_        
-        switch(wf_status) {
-          case WL_NO_SSID_AVAIL:
-            Serial.println("[WiFi] SSID not found");
-            break;
-          case WL_CONNECT_FAILED:
-            Serial.print("[WiFi] Failed - WiFi not connected! Reason: ");
-            break;
-          case WL_CONNECTION_LOST:
-            Serial.println("[WiFi] Connection was lost");
-            break;
-          case WL_SCAN_COMPLETED:
-            Serial.println("[WiFi] Scan is completed");
-            break;
-          case WL_DISCONNECTED:
-            Serial.println("[WiFi] WiFi is disconnected");
-            break;
-#endif
-          case WL_CONNECTED:
-            #ifdef _DEBUG_       
-                Serial.println();
-                Serial.print("Connected, IP address: ");
-                Serial.println(WiFi.localIP());    
-            #endif          
-            return true;
-                
-          default:
-            Serial.print("[WiFi] WiFi Status: ");
-            Serial.println(WiFi.status());
-            break;
-        }
-        try_access_times = try_access_times -1;
-        delay(1000);
-    }
-    WiFi.disconnect();
-    return false;
-}
 
 /// @brief make sure WiFi ssid/password is correct. Otherwise, raise the Adhoc AP Station with ssid = SOICT_CORE_BOARD and password =  12345678
 void WiFiSelfEnroll::setup() {
