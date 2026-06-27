@@ -8,9 +8,6 @@
     #error "BuzzerManager requires ENABLE_BUZZER=1 in HardwareConfig.h"
 #endif
 
-// GPIO pin for buzzer (configured in HardwareConfig.h)
-// BUZZER_PIN is already defined in HardwareConfig.h
-
 class BuzzerManager {
 public:
     BuzzerManager();

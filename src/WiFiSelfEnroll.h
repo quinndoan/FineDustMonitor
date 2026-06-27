@@ -3,25 +3,21 @@
 #include <LittleFS.h>
 #if defined(ARDUINO_ARCH_ESP32)
     #include <WiFi.h>
-    #include <WebServer.h>              /// create webserver
+    #include <WebServer.h>             
 #elif  defined(ARDUINO_ARCH_ESP8266)
     #include <WiFi.h>
-    #include <WebServer.h>       /// create webserver
+    #include <WebServer.h>    
 #endif
 
-// /// @brief the default wifi SSID
-// #define SOICT_WIFI_SSID "SOICT_CORE_BOARD"
-// /// @brief the default wifi password
-// #define SOICT_WIFI_PASSWORD "12345678"
 
-/// @brief the default wifi SSID
+// @brief the default wifi SSID
 #define AP_WIFI_SSID "Esp32_AP"
-/// @brief the default wifi password
+// @brief the default wifi password
 #define AP_WIFI_PASSWORD "12345678"
 
 
-/// @brief AP mode runs indefinitely until user triggers /restart or physical reset.
-/// The old ADHOC_STATION_DURATION timeout has been removed.
+// @brief AP mode runs indefinitely until user triggers /restart or physical reset.
+// The old ADHOC_STATION_DURATION timeout has been removed.
 
 class WiFiSelfEnroll{
     private:
@@ -38,7 +34,7 @@ class WiFiSelfEnroll{
         static ESP8266WebServer server;
 #endif    
     private:
-        /// @brief true if the Adhoc WiFi is active
+        // @brief true if the Adhoc WiFi is active
         bool    APMode;
         static void _HomePage();
         static void _EnrollPage();

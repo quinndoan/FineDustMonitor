@@ -1,6 +1,5 @@
 #include "OledBackdrop.h"
 #include "ConfigManager.h" // Lấy thông số cấu hình để hiển thị
-// WiFiManager header removed as it is no longer used directly
 #include "WiFiSelfEnroll.h" // Lấy cấu hình AP mặc định
 #include "main.h"           // Import version
 #include <WiFi.h>           // Để lây thông tin địa chỉ IP

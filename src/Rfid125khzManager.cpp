@@ -1,8 +1,5 @@
 #include "Rfid125khzManager.h"
 
-// Sử dụng Serial2 cho module RFID 125kHz
-// Nhiều module 125kHz (VD: RDM6300) gửi chuỗi ASCII kết thúc bằng \r hoặc \n
-
 static String rfidBuffer;
 static bool rfidTagReady = false;
 static bool rfidInFrame = false;

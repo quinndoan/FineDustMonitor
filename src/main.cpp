@@ -1,12 +1,10 @@
-// Arduino core
 #include <Arduino.h>
-
-// Hardware configuration MUST be included first
 #include "HardwareConfig.h"
+
 // Core modules (always included)
-#include "ApiManager.h"    // Request HTTPS kiểm tra MSSV với Google Sheet
-#include "ConfigManager.h" // Cấu hình ghi bộ nhớ Flash
-#include "main.h"          // Thông tin dev
+#include "ApiManager.h" 
+#include "ConfigManager.h"
+#include "main.h"         
 
 // Display module
 #if ENABLE_OLED_DISPLAY
@@ -391,9 +389,6 @@ void handleCardCheck(String tag, const char *logPrefix) {
 
   delay(2000);
   renderCurrentMode(); // Phục hồi trang cũ
-
-  // Xóa bộ đệm và reset cooldown của các module tránh bị bắt trùng thẻ cũ lưu
-  // trong RX rfid_clear_rx(); nfc_clear_rx();
 }
 
 void handleQrCardCheck(const String &qrPayload) {

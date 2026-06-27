@@ -1,8 +1,3 @@
-"""
-SQLAlchemy ORM models matching the PostgreSQL schema.
-Tables are created via raw SQL (see implementation_plan.md).
-These models are used for querying only.
-"""
 import enum
 from datetime import datetime
 

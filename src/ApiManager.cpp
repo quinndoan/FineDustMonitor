@@ -103,8 +103,6 @@ bool ApiManager::verifyStudent(String scannedData, bool isRfid, String &studentI
                 }
                 http.end();
                 
-                // Quy ước: Nếu Script trả về chuỗi "ERROR" (hoặc không gì cả) -> Từ chối!
-                // Ngược lại nếu trả về tên "Doan Thi Thu Quyen" -> Hợp lệ!
                 if (payload.equalsIgnoreCase("error") || payload.length() == 0 || payload.equalsIgnoreCase("invalid")) {
                     return false;
                 }

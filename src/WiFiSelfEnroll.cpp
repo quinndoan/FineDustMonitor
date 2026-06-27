@@ -5,37 +5,37 @@
 #define LED_BUILTIN 2   // nếu board dùng GPIO2 cho LED on-board
 #endif
 
-/// @brief print more debug information to serial
+// @brief print more debug information to serial
 #define _DEBUG_
 
 #if defined(ARDUINO_ARCH_ESP32)
-    /// @brief Press BOOT Button whenever restart to force device into Adhoc Station mode
+    // @brief Press BOOT Button whenever restart to force device into Adhoc Station mode
     //#define BOOT_BUTTON GPIO_NUM_9
 #elif defined(ARDUINO_ARCH_ESP8266)
     //#define BOOT_BUTTON 0   // GPIO 0  là nút bấm Flash với nội trở kéo lên
 #endif    
 
-/// @brief  the current ssid. A pointer to parambuf
+// @brief  the current ssid. A pointer to parambuf
 String WiFiSelfEnroll::ssid;
 char WiFiSelfEnroll::myssid[32];
-/// @brief  the current password. A pointer to parambuf
+// @brief  the current password. A pointer to parambuf
 String WiFiSelfEnroll::password;
 char WiFiSelfEnroll::mypassword[20];
-/// @brief  the current deviceid. A pointer to parambuf
+// @brief  the current deviceid. A pointer to parambuf
 String WiFiSelfEnroll::deviceid;
 char WiFiSelfEnroll::mydeviceid[30];
 #if defined(ARDUINO_ARCH_ESP32)        
-    /// @brief  adhoc webserver to configure the new wifi network
+    // @brief  adhoc webserver to configure the new wifi network
     WebServer WiFiSelfEnroll::server(80);
 #elif  defined(ARDUINO_ARCH_ESP8266)
-    /// @brief  adhoc webserver to configure the new wifi network
+    // @brief  adhoc webserver to configure the new wifi network
     ESP8266WebServer WiFiSelfEnroll::server(80);        
 #endif    
 
 WiFiClient WiFiSelfEnroll::wificlient;
 /*-------------------------------------------------------------------------*/
-/// @brief send the homepage html to client
-/// @details entrypoint http://192.168.15.1/
+// @brief send the homepage html to client
+// @details entrypoint http://192.168.15.1/
 void WiFiSelfEnroll::_HomePage() {
     File file = LittleFS.open("/index.html", "r");
     if (!file) {
@@ -47,8 +47,8 @@ void WiFiSelfEnroll::_HomePage() {
 }
 
 /*-------------------------------------------------------------------------*/
-/// @brief send the scan wifi html to client
-/// @details entrypoint http://192.168.15.1/enroll
+// @brief send the scan wifi html to client
+// @details entrypoint http://192.168.15.1/enroll
 void WiFiSelfEnroll::_EnrollPage() {
     File file = LittleFS.open("/enroll.html", "r");
     if (!file) {
@@ -60,9 +60,9 @@ void WiFiSelfEnroll::_EnrollPage() {
 }
 
 /*-------------------------------------------------------------------------*/
-/// @brief send wifi list in csv format to web client
-/// @details entrypoint http://192.168.15.1/cgi/scan
-/// @example 812A,12345678,dce-ktmt,66668888
+// @brief send wifi list in csv format to web client
+// @details entrypoint http://192.168.15.1/cgi/scan
+// @example 812A,12345678,dce-ktmt,66668888
 void WiFiSelfEnroll::_APIScan()  {
     int n = WiFi.scanNetworks();
     Serial.println("scan done");
@@ -85,15 +85,15 @@ void WiFiSelfEnroll::_APIScan()  {
     server.send(200,"text/plain", res);
 }
 /*-------------------------------------------------------------------------*/
-/// @brief WebAPI: receive ssid, pass from the HttpGet and save to permanent storage
-/// @details exntrypoint http://192.168.15.1/cgi/save?s=ssid&p=password
+// @brief WebAPI: receive ssid, pass from the HttpGet and save to permanent storage
+// @details exntrypoint http://192.168.15.1/cgi/save?s=ssid&p=password
 void WiFiSelfEnroll::_APISave()  {
 #ifdef _DEBUG_       
     Serial.println("WiFiSelf: /cgi/save");
     Serial.println(server.uri());
 #endif        
     
-    /// Handle "clear all params" (Factory Reset)
+    // Handle "clear all params" (Factory Reset)
     if (server.hasArg("clear") && server.arg("clear") == "true") {
         if (LittleFS.exists("/ssid.txt")) LittleFS.remove("/ssid.txt");
         if (LittleFS.exists("/password.txt")) LittleFS.remove("/password.txt");
@@ -107,7 +107,7 @@ void WiFiSelfEnroll::_APISave()  {
     }
 
     String myArg="s";
-    /// Save SSID
+    // Save SSID
     if (server.hasArg(myArg)) {
         ssid = server.arg(myArg);
         File f = LittleFS.open("/ssid.txt", "w");
@@ -115,7 +115,7 @@ void WiFiSelfEnroll::_APISave()  {
         f.close();
     }    
 
-    /// Save Password
+    // Save Password
     myArg="p";
     if (server.hasArg(myArg)) {
         password = server.arg(myArg);
@@ -138,8 +138,8 @@ void WiFiSelfEnroll::_APISave()  {
 }
 
 /*-------------------------------------------------------------------------*/
-/// @brief WebAPI: reponse the wifi configuration and device id
-/// @details exntrypoint http://192.168.15.1/cgi/save?n=ssid&p=password
+// @brief WebAPI: reponse the wifi configuration and device id
+// @details exntrypoint http://192.168.15.1/cgi/save?n=ssid&p=password
 void WiFiSelfEnroll::_APISettings()  {
     char buf[50];
     (ssid + "," + password + ',' + deviceid).toCharArray(buf,50);
@@ -147,18 +147,18 @@ void WiFiSelfEnroll::_APISettings()  {
     Serial.print("WiFiSelf: /cgi/settings - ");
     Serial.println(buf);
 #endif
-    /// Response to the web client
+    // Response to the web client
     server.send(200,"text/plain", buf);
 }
 
 /*-------------------------------------------------------------------------*/
-/// @brief Read the ssid / deviceid into flash memory
-/// @return e.g. '812A,12345678'
+// @brief Read the ssid / deviceid into flash memory
+// @return e.g. '812A,12345678'
 void WiFiSelfEnroll::ReadWiFiConfig()  {
 #ifdef _DEBUG_       
     Serial.printf("ReadWiFiConfig");
 #endif    
-    /// Control the flash memory with its idendification namespace, and read mode
+    // Control the flash memory with its idendification namespace, and read mode
     if (LittleFS.exists("/ssid.txt")) {
         File f = LittleFS.open("/ssid.txt", "r");
         ssid = f.readStringUntil('\n');
@@ -179,7 +179,7 @@ void WiFiSelfEnroll::ReadWiFiConfig()  {
 }        
     
 /*-------------------------------------------------------------------------*/
-/// @brief Reboot the device — shows countdown page first, then restarts
+// @brief Reboot the device — shows countdown page first, then restarts
 void WiFiSelfEnroll::_Reboot()  {
     // Send a nice farewell page before rebooting
     String html = "<!DOCTYPE html><html><head>"
@@ -224,9 +224,9 @@ void WiFiSelfEnroll::_Reboot()  {
 }
 
 /*-------------------------------------------------------------------------*/
-/// @brief setup the Adhoc wifi
-/// @param ssid     Wifi name. E.g "My WiFi"
-/// @param password  Wifi secret password.
+// @brief setup the Adhoc wifi
+// @param ssid     Wifi name. E.g "My WiFi"
+// @param password  Wifi secret password.
 void WiFiSelfEnroll::SetupStation(const char * adhoc_ssid, const char * adhoc_password) {
     APMode = true;
     
@@ -237,10 +237,10 @@ void WiFiSelfEnroll::SetupStation(const char * adhoc_ssid, const char * adhoc_pa
     IPAddress gateway(192,168,15,1);
     IPAddress subnet(255,255,255,0);
 
-    ///LED_BUILTIN is used for wifi indicator 
+    //LED_BUILTIN is used for wifi indicator 
     // pinMode(LED_BUILTIN, OUTPUT);
 
-    /// Indicator: start the wifi
+    // Indicator: start the wifi
     digitalWrite(LED_BUILTIN, HIGH);       
 
 #ifdef _DEBUG_
@@ -250,10 +250,10 @@ void WiFiSelfEnroll::SetupStation(const char * adhoc_ssid, const char * adhoc_pa
     Serial.println(adhoc_password);
 #endif    
     
-    /// set as a Wi-Fi station and access point simultaneously
+    // set as a Wi-Fi station and access point simultaneously
     WiFi.mode(WIFI_AP_STA);
 
-    /// Broadcast the Adhoc WiFi
+    // Broadcast the Adhoc WiFi
     if (WiFi.softAPConfig(local_ip,gateway,subnet)) {
 #ifdef _DEBUG_
         Serial.println("WiFi configuration is okay");
@@ -266,25 +266,25 @@ void WiFiSelfEnroll::SetupStation(const char * adhoc_ssid, const char * adhoc_pa
     }
 
 #ifdef _DEBUG_        
-    /// WiFi is ready
+    // WiFi is ready
     Serial.print("IP address: ");
     Serial.println(WiFi.softAPIP());
 #endif    
 
-    /// Route the website
+    // Route the website
     server.on("/", _HomePage);
     server.on("/enroll", _EnrollPage);
     server.on("/cgi/scan", _APIScan);
     server.on("/cgi/save", _APISave);
     server.on("/cgi/settings", _APISettings);
     server.on("/restart", _Reboot);
-    /// Show the own website
+    // Show the own website
     server.begin();
     _loop();
     _Reboot();
 }
 
-/// @brief loop with led indicator — runs indefinitely until user restarts via web UI (/restart)
+// @brief loop with led indicator — runs indefinitely until user restarts via web UI (/restart)
 void WiFiSelfEnroll::_loop()  {          
     // AP mode runs forever — only exits when user presses /restart from the web interface
     // or physically resets the device.
@@ -324,16 +324,16 @@ char * WiFiSelfEnroll::GetDeviceID()  {
 }
 
 
-/// @brief make sure WiFi ssid/password is correct. Otherwise, raise the Adhoc AP Station with ssid = SOICT_CORE_BOARD and password =  12345678
+// @brief make sure WiFi ssid/password is correct. Otherwise, raise the Adhoc AP Station with ssid = SOICT_CORE_BOARD and password =  12345678
 void WiFiSelfEnroll::setup() {
     WiFiSelfEnroll::setup(AP_WIFI_SSID, AP_WIFI_PASSWORD);
 }
 
-/// @brief make sure WiFi ssid/password is correct. Otherwise, raise the Adhoc AP Station to enter the new config
-/// @param ssid     Wifi name. E.g "My WiFi"
-/// @param password  Wifi secret password.
-/// @note should let it at the first part of the global setup() function in Arduino Code.
-/// @example  WiFiSelfEnroll MyWiFi;  MyWiFi.setup("ABC","12345678");  
+// @brief make sure WiFi ssid/password is correct. Otherwise, raise the Adhoc AP Station to enter the new config
+// @param ssid     Wifi name. E.g "My WiFi"
+// @param password  Wifi secret password.
+// @note should let it at the first part of the global setup() function in Arduino Code.
+// @example  WiFiSelfEnroll MyWiFi;  MyWiFi.setup("ABC","12345678");  
 void WiFiSelfEnroll::setup(const char * adhoc_ssid, const char * adhoc_password) {
     SetupStation(adhoc_ssid, adhoc_password);
 }

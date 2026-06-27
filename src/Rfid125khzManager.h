@@ -7,8 +7,6 @@
 	#error "Rfid125khzManager requires ENABLE_RFID_125KHZ=1 in HardwareConfig.h"
 #endif
 
-// Pin and baudrate assignments for 125kHz RFID module (configured in HardwareConfig.h)
-// Note: Override these by defining in platformio.ini if different from defaults
 
 // Khởi tạo UART cho RFID
 void rfid_init();
